@@ -4,7 +4,6 @@ using ..GridSetup
 using ..RFSolver
 using ..HeatSolver
 using ..Timelapse
-using ..Plotting
 
 export run_simulation, run_heat_simulation
 

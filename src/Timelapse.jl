@@ -35,7 +35,6 @@ module Timelapse
 
 using GLMakie
 using Printf
-using Base.Threads
 using ..Config
 using ..HeatSolver
 using ..Plotting: slice_controls!

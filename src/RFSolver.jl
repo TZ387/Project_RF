@@ -7,7 +7,6 @@ using IterativeSolvers
 using LinearMaps
 using StaticArrays
 using ..Config
-using ..GridSetup
 
 export solve_rf, calculate_fields, convert_V
 
