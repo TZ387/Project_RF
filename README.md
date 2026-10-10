@@ -60,7 +60,7 @@ evaluated over all cells, with a safety factor of 0.45.
 
 ### 1.3 CPU parallelisation
 
-The Laplacian and Euler update kernels are parallelised (if this is enabled, see section Enabling Multiple Threads below) by partitioning the grid's z-dimension into chunks, one per worker thread. The worker count is set automatically to $\min(N_\text{Julia threads},\ \lfloor N_\text{logical cores} / 2 \rfloor)$, excluding hyperthreads which share the FPU and provide no benefit for dense arithmetic. The active count is printed at the start of each phase.
+The heat update kernel is parallelised (if this is enabled, see section Enabling Multiple Threads below) by partitioning the grid's z-dimension into chunks, one per worker thread. The worker count is set automatically to $\min(N_\text{Julia threads},\ \lfloor N_\text{logical cores} / 2 \rfloor)$, excluding hyperthreads which share the FPU and provide no benefit for dense arithmetic. The active count is printed at the start of each phase.
 
 The matrix-vector product of the RF solver is parallelised over alternating z-layers and uses all Julia threads.
 
