@@ -19,7 +19,7 @@ function run_simulation(grid_params, rf_params, boundary_conditions)
 
     @info "Computing electric field and thermal dissipation..."
     Qel, E_mag, E_vec = calculate_fields(cellValues, dh, V_dof, rf_params.sigma, grid_params)
-    V = convert_V(V_dof, grid_params)
+    V = convert_V(V_dof, dh, grid_params)
 
     return grid, V_dof, Qel, E_mag, E_vec, V
 end

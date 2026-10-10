@@ -204,8 +204,10 @@ function calculate_fields(cellvalues::CellValues, dh::DofHandler, V_dof::Abstrac
     return Q_el, E_mag, E_vec
 end
 
-function convert_V(V_dof, grid_params)
-    return reshape(V_dof, grid_params.nx + 1, grid_params.ny + 1, grid_params.nz + 1)
+# DOFs are not numbered in node order, so map them onto the grid nodes first.
+function convert_V(V_dof, dh, grid_params)
+    V = evaluate_at_grid_nodes(dh, V_dof, :V_dof)
+    return reshape(V, grid_params.nx + 1, grid_params.ny + 1, grid_params.nz + 1)
 end
 
 end # module RFSolver
