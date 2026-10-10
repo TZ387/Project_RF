@@ -91,20 +91,7 @@ function _write_compressed(group, name::String, data::Array{Float64}, chunk)
 end
 
 # Choose chunk size targeting ~32K elements, scaled to array dimensionality
-function _autochunk(sz::Tuple)
-    TARGET = 32_768
-    if length(sz) == 1
-        return (min(sz[1], TARGET),)
-    elseif length(sz) == 2
-        s = round(Int, sqrt(TARGET))
-        return (min(sz[1], s), min(sz[2], s))
-    elseif length(sz) == 3
-        s = round(Int, cbrt(TARGET))
-        return (min(sz[1], s), min(sz[2], s), min(sz[3], s))
-    else
-        return sz
-    end
-end
+_autochunk(sz::Tuple) = length(sz) in 1:3 ? min.(sz, round(Int, 32_768^(1 / length(sz)))) : sz
 
 # Recursively load a group, reconstructing complex arrays from real/imag subgroups
 function _load_group(group)
