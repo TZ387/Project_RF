@@ -12,7 +12,7 @@ function save_simulation(filepath::String,
                          kwargs...)
     h5open(filepath, "w") do f
         _save_grid_params(f, grid_params)
-        f["material_indices"] = material_indices
+        _write_compressed(f, "material_indices", material_indices, _autochunk(size(material_indices)))
 
         if !isempty(kwargs)
             g = create_group(f, "data")
@@ -79,15 +79,15 @@ function _write_field(group, name::String, v)
     end
 end
 
-# Write a Float64 array with shuffle filter and moderate deflate compression
-function _write_compressed(group, name::String, data::Array{Float64}, chunk)
+# Write an array with shuffle filter and moderate deflate compression
+function _write_compressed(group, name::String, data::Array, chunk)
     ds = create_dataset(
-        group, name, datatype(Float64), dataspace(data);
+        group, name, datatype(data), dataspace(data);
         chunk   = chunk,
         shuffle = (),
         deflate = 3
     )
-    write_dataset(ds, datatype(Float64), data)
+    write_dataset(ds, datatype(data), data)
 end
 
 # Choose chunk size targeting ~32K elements, scaled to array dimensionality
