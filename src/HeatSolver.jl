@@ -8,11 +8,12 @@
 # Cartesian grid that GridSetup produces.
 #
 # Time integration: explicit forward Euler, with Δt chosen automatically to
-# satisfy the von-Neumann stability criterion:
+# satisfy the stability criterion:
 #
-#   Δt ≤ min_over_cells( VHC / (2·k · (1/Δx² + 1/Δy² + 1/Δz²)) )
+#   Δt ≤ min_over_cells( VHC / Σ_faces(k_face / Δ²) )
 #
-# A safety factor of 0.45 (< 0.5) is applied.
+# where k_face is the harmonic mean of the two cells sharing the face.
+# A safety factor of 0.9 is applied.
 #
 # Boundary conditions: zero-flux (Neumann) on all six faces.
 #
@@ -64,37 +65,6 @@ function cpu_backend()
     return CPUBackend(workers)
 end
 
-# ── Stability ─────────────────────────────────────────────────────────────────
-
-"""
-    compute_stable_dt(heat_params, grid_params; safety=0.45) -> Float64
-
-Return the largest Δt satisfying the explicit-Euler von-Neumann stability
-condition. Serial loop — called once per phase, not per step.
-"""
-function compute_stable_dt(heat_params::Config.HeatParams,
-                           grid_params::Config.GridParams;
-                           safety::Float64 = 0.45)
-    dx = grid_params.lx / grid_params.nx
-    dy = grid_params.ly / grid_params.ny
-    dz = grid_params.lz / grid_params.nz
-
-    inv_sum = 1.0/dx^2 + 1.0/dy^2 + 1.0/dz^2
-
-    k   = heat_params.k
-    VHC = heat_params.VHC
-
-    dt_min = Inf
-    for i in eachindex(k)
-        ki = k[i]
-        ki == 0.0 && continue
-        dt_cell = VHC[i] / (2.0 * ki * inv_sum)
-        dt_min  = min(dt_min, dt_cell)
-    end
-
-    return safety * dt_min
-end
-
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 @inline function harmonic_mean(a::Float64, b::Float64)
@@ -129,6 +99,27 @@ function _step_slices!(Tn, T, Q, c, kx, ky, kz, ls)
         l > 1  && (flux += kz[i, j, l-1] * (T[i, j, l-1] - Tc))
         Tn[i, j, l] = Tc + c[i, j, l] * flux
     end
+end
+
+# ── Stability ─────────────────────────────────────────────────────────────────
+
+"""
+    compute_stable_dt(heat_params, grid_params; safety=0.9) -> Float64
+
+Return `safety` times the largest explicit-Euler Δt that cannot overshoot: the
+minimum over all cells of VHC divided by the sum of the cell's face conductances.
+"""
+compute_stable_dt(heat_params::Config.HeatParams, grid_params::Config.GridParams; safety::Float64 = 0.9) =
+    compute_stable_dt(heat_params.VHC, face_conductances(heat_params.k, grid_params)...; safety)
+
+function compute_stable_dt(VHC, kx, ky, kz; safety::Float64 = 0.9)
+    S = zeros(size(VHC))
+    @views begin
+        S[1:end-1, :, :] .+= kx;  S[2:end, :, :] .+= kx
+        S[:, 1:end-1, :] .+= ky;  S[:, 2:end, :] .+= ky
+        S[:, :, 1:end-1] .+= kz;  S[:, :, 2:end] .+= kz
+    end
+    return safety * minimum(VHC ./ S)
 end
 
 # ── Parallel kernel (CPU) ─────────────────────────────────────────────────────
@@ -176,7 +167,7 @@ function solve_heat_phase(T_in::Array{Float64,3},
 
     kx, ky, kz = face_conductances(heat_params.k, grid_params)
 
-    Δt        = compute_stable_dt(heat_params, grid_params)
+    Δt        = compute_stable_dt(heat_params.VHC, kx, ky, kz)
     num_steps = ceil(Int, t_phase / Δt)
     Δt        = t_phase / num_steps
     c         = Δt ./ heat_params.VHC

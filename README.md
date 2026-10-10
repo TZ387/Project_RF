@@ -52,11 +52,11 @@ schedule = [(:on, 30.0), (:off, 60.0), (:on, 15.0)]
 
 During `:on` phases $Q = Q_{el}$; during `:off` phases $Q = 0$.
 
-The time step $\Delta t$ is chosen automatically to satisfy the explicit-Euler von-Neumann stability criterion:
+The time step $\Delta t$ is chosen automatically to satisfy the explicit-Euler stability criterion:
 
-$$\Delta t \leq \frac{\text{VHC}}{2\, k \left(\frac{1}{\Delta x^2} + \frac{1}{\Delta y^2} + \frac{1}{\Delta z^2}\right)}$$
+$$\Delta t \leq \frac{\text{VHC}}{\sum_{f} k_f / \Delta_f^2}$$
 
-evaluated over all cells, with a safety factor of 0.45.
+evaluated over all cells, with a safety factor of 0.9. The sum runs over the faces of a cell, $k_f$ is the harmonic mean of the conductivities of the two cells sharing face $f$, and $\Delta_f$ is the grid spacing across it.
 
 ### 1.3 CPU parallelisation
 
