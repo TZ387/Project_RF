@@ -1,8 +1,7 @@
 module RFSolver
 
-using Ferrite, SparseArrays
+using Ferrite
 using LinearAlgebra
-using Statistics
 using IterativeSolvers
 using LinearMaps
 using StaticArrays
