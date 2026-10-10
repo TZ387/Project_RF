@@ -125,19 +125,15 @@ function run_heat_timelapse(Qel::Array{Float64,3},
         (label = "z axis", range = 1:nz),
     ]
 
-    sliders       = []
-    left_buttons  = []
-    right_buttons = []
+    sliders = []
 
     for (i, (label, range)) in enumerate(slider_params)
         left_btn = Button(slider_layout[i, 1], label = "◀", width = 30)
-        push!(left_buttons, left_btn)
 
         slider = Slider(slider_layout[i, 2:4], range = range, startvalue = range[1])
         push!(sliders, slider)
 
         right_btn = Button(slider_layout[i, 5], label = "▶", width = 30)
-        push!(right_buttons, right_btn)
 
         Label(slider_layout[i, 6], label, tellwidth = false, halign = :left)
 

@@ -25,19 +25,9 @@ function plot_slices(V, grid_params; fig = nothing, num_ticks = 5,
     y = LinRange(-grid_params.ly/2, grid_params.ly/2, grid_params.ny)
     z = LinRange(grid_params.lz, 0, grid_params.nz)
 
-    if use_log_scale
-        V_plot     = log10.(V)
-        cmin, cmax = minimum(V_plot), maximum(V_plot)
-        ticks      = range(cmin, cmax, length=num_ticks)
-        tick_labels = [10^t for t in ticks]
-        tick_format = "%.1e"
-    else
-        V_plot     = V
-        cmin, cmax = minimum(V), maximum(V)
-        ticks      = range(cmin, cmax, length=num_ticks)
-        tick_labels = ticks
-        tick_format = "%.1e"
-    end
+    V_plot     = use_log_scale ? log10.(V) : V
+    cmin, cmax = extrema(V_plot)
+    ticks      = range(cmin, cmax, length=num_ticks)
 
     colormap = :heat
     Colorbar(fig[1, 2], limits = (cmin, cmax), colormap = colormap, ticks=ticks)
@@ -50,19 +40,15 @@ function plot_slices(V, grid_params; fig = nothing, num_ticks = 5,
         (label = "z axis", range = 1:length(z))
     ]
 
-    sliders       = []
-    left_buttons  = []
-    right_buttons = []
+    sliders = []
 
     for (i, (label, range)) in enumerate(slider_params)
         left_btn = Button(slider_layout[i, 1], label = "◀", width = 30)
-        push!(left_buttons, left_btn)
 
         slider = Slider(slider_layout[i, 2:4], range = range, startvalue = range[1])
         push!(sliders, slider)
 
         right_btn = Button(slider_layout[i, 5], label = "▶", width = 30)
-        push!(right_buttons, right_btn)
 
         Label(slider_layout[i, 6], label, tellwidth = false, halign = :left)
 
