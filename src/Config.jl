@@ -62,12 +62,9 @@ function create_coordinate_grids(grid_params::GridParams)
 end
 
 # Function to setup material properties matrices based on the geometry
-function setup_material_properties(material_indices, materials, nx, ny, nz)
-    sigma = zeros(Float64, nx, ny, nz)
-    epsilon_im = zeros(Float64, nx, ny, nz)
-    VHC = zeros(Float64, nx, ny, nz)
-    k = zeros(Float64, nx, ny, nz)
-    
+function setup_material_properties(material_indices, materials)
+    sigma, epsilon_im, VHC, k = (zeros(size(material_indices)) for _ in 1:4)
+
     for i in eachindex(material_indices)
         mat = materials[material_indices[i]]
         sigma[i]      = mat[:sigma]

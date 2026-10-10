@@ -49,8 +49,7 @@ function main()
     material_indices = geometryDefinition(grid_params)
 
     # Setup material properties (delegated to Config.jl)
-    sigma, epsilon_im, VHC, k = setup_material_properties(
-        material_indices, materials, grid_params.nx, grid_params.ny, grid_params.nz)
+    sigma, epsilon_im, VHC, k = setup_material_properties(material_indices, materials)
 
     # Load RF parameters
     rf_params = RFParams(
