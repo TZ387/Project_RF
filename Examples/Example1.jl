@@ -32,7 +32,6 @@ end
 
 function main()
     # Flags for use
-    use_gpu          = false   # Decide if you want to use GPU for calculations or not
     create_timelapse = true    # Show live-updating heat plot during simulation
 
     # Define grid parameters
