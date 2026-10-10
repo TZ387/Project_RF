@@ -69,7 +69,6 @@ function run_heat_timelapse(Qel::Array{Float64,3},
                             grid_params::Config.GridParams)
 
     nx, ny, nz = grid_params.nx, grid_params.ny, grid_params.nz
-    Qzero = zeros(Float64, nx, ny, nz)
 
     x = LinRange(-grid_params.lx/2, grid_params.lx/2, nx)
     y = LinRange(-grid_params.ly/2, grid_params.ly/2, ny)
@@ -123,43 +122,13 @@ function run_heat_timelapse(Qel::Array{Float64,3},
 
     # ── Worker thread ─────────────────────────────────────────────────────────
     sim_task = Threads.@spawn begin
-        T         = copy(T0)
-        t_elapsed = 0.0
-
-        for (phase_idx, (state, duration)) in enumerate(heat_params.schedule)
-
-            state in (:on, :off) || error(
-                "Unknown phase state $(repr(state)) in schedule entry $phase_idx. " *
-                "Expected :on or :off.")
-
-            label = state == :on ? "heating" : "cooling"
-            Q_src = state == :on ? Qel : Qzero
-
-            @info "Phase $phase_idx/$(length(heat_params.schedule)): " *
-                  "$label for $(duration) s  ($(heat_params.n_update) plot updates)"
-
-            # t_elapsed captured by value for this phase's closure
-            t_off = t_elapsed
-
-            cb = (T_curr, t_local) -> begin
-                T_snap = copy(T_curr)       # copy on worker thread — safe
-                Tmin   = minimum(T_curr)
-                Tmax   = maximum(T_curr)
-                Tmax   = Tmax ≈ Tmin ? Tmin + 1.0 : Tmax
-                put!(snapshot_ch,
-                     PlotSnapshot(T_snap, t_off + t_local, label, Tmin, Tmax))
-            end
-
-            T = HeatSolver.solve_heat_phase(
-                    T, Q_src, heat_params, grid_params, duration;
-                    n_update  = heat_params.n_update,
-                    update_cb = cb)
-
-            @info "Phase $phase_idx complete.  " *
-                  "Peak T = $(round(maximum(T); digits=2)) °C"
-
-            t_elapsed += duration
-        end
+        T = HeatSolver.solve_heat_schedule(Qel, heat_params, grid_params;
+                update_cb = (T_curr, t_sim, label) -> begin
+                    T_snap     = copy(T_curr)       # copy on worker thread — safe
+                    Tmin, Tmax = extrema(T_curr)
+                    Tmax       = Tmax ≈ Tmin ? Tmin + 1.0 : Tmax
+                    put!(snapshot_ch, PlotSnapshot(T_snap, t_sim, label, Tmin, Tmax))
+                end)
 
         put!(snapshot_ch, nothing)  # sentinel: tell main thread we are done
         return T

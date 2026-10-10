@@ -197,4 +197,35 @@ function solve_heat_phase(T_in::Array{Float64,3},
     return T
 end
 
+# ── Schedule solver ───────────────────────────────────────────────────────────
+
+# Run every phase of the schedule in turn, with Qel as the source during :on
+# phases.  update_cb(T, t, label), if given, is called n_update times per phase.
+function solve_heat_schedule(Qel, heat_params, grid_params; update_cb = nothing)
+    Qzero     = zero(Qel)
+    T         = heat_params.T_initial
+    t_elapsed = 0.0
+
+    for (phase_idx, (state, duration)) in enumerate(heat_params.schedule)
+        state in (:on, :off) || error(
+            "Unknown phase state $(repr(state)) in schedule entry $phase_idx. " *
+            "Expected :on or :off.")
+
+        label = state == :on ? "heating" : "cooling"
+        @info "Phase $phase_idx/$(length(heat_params.schedule)): $label for $(duration) s"
+
+        t_off = t_elapsed   # captured by value for this phase's closure
+        cb    = update_cb === nothing ? nothing :
+                (T_curr, t_local) -> update_cb(T_curr, t_off + t_local, label)
+
+        T = solve_heat_phase(T, state == :on ? Qel : Qzero, heat_params, grid_params, duration;
+                             n_update = heat_params.n_update, update_cb = cb)
+
+        @info "Phase $phase_idx complete.  Peak T = $(round(maximum(T); digits=2)) °C"
+        t_elapsed += duration
+    end
+
+    return T
+end
+
 end # module HeatSolver

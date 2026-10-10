@@ -33,22 +33,7 @@ function run_heat_simulation(Qel, grid_params, heat_params;
     end
 
     @info "Running heat simulation (no live plot)..."
-    Qzero = zeros(Float64, grid_params.nx, grid_params.ny, grid_params.nz)
-    T = heat_params.T_initial
-
-    for (phase_idx, (state, duration)) in enumerate(heat_params.schedule)
-        state in (:on, :off) || error(
-            "Unknown phase state $(repr(state)) in schedule entry $phase_idx. " *
-            "Expected :on or :off.")
-
-        Q_src = state == :on ? Qel : Qzero
-        label = state == :on ? "heating" : "cooling"
-
-        @info "Phase $phase_idx/$(length(heat_params.schedule)): $label for $(duration) s"
-        T = HeatSolver.solve_heat_phase(T, Q_src, heat_params, grid_params, duration)
-    end
-
-    return T
+    return HeatSolver.solve_heat_schedule(Qel, heat_params, grid_params)
 end
 
 end  # module RunSimulation
