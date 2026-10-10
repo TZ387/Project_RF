@@ -123,17 +123,23 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
     # ── Matrix-free matvec y = K_eff * v ────────────────────────────────────
     # lv and lr are SVectors: constructed from a tuple gather, multiplied as
     # SMatrix * SVector — fully stack-allocated, no heap pressure per call.
+    # z-layers of equal parity share no DOFs, so each half runs in parallel.
 
     function matvec!(y, v)
         fill!(y, 0.0)
-        @inbounds for cn in 1:n_cells
-            dofs = @view cell_dofs_all[:, cn]
-            c    = conductivities[cn]
-            lv   = SVector{8}(v[dofs[1]], v[dofs[2]], v[dofs[3]], v[dofs[4]],
-                              v[dofs[5]], v[dofs[6]], v[dofs[7]], v[dofs[8]])
-            lr   = Ke_ref * lv
-            for i in 1:n_basefuncs
-                y[dofs[i]] += c * lr[i]
+        n_layer = nx_max * ny_max
+        for parity in 1:2
+            Threads.@threads for iz in parity:2:grid_params.nz
+                @inbounds for cn in (iz - 1) * n_layer + 1 : iz * n_layer
+                    dofs = @view cell_dofs_all[:, cn]
+                    c    = conductivities[cn]
+                    lv   = SVector{8}(v[dofs[1]], v[dofs[2]], v[dofs[3]], v[dofs[4]],
+                                      v[dofs[5]], v[dofs[6]], v[dofs[7]], v[dofs[8]])
+                    lr   = Ke_ref * lv
+                    for i in 1:n_basefuncs
+                        y[dofs[i]] += c * lr[i]
+                    end
+                end
             end
         end
         # Identity rows for Dirichlet DOFs
