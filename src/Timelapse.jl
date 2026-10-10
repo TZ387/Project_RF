@@ -38,6 +38,7 @@ using Printf
 using Base.Threads
 using ..Config
 using ..HeatSolver
+using ..Plotting: slice_controls!
 
 export run_heat_timelapse
 
@@ -116,55 +117,7 @@ function run_heat_timelapse(Qel::Array{Float64,3},
              limits   = crange_obs,
              label    = "Temperature [°C]")
 
-    # ── Sliders ───────────────────────────────────────────────────────────────
-    slider_layout = GridLayout(fig[2, 1])
-
-    slider_params = [
-        (label = "x axis", range = 1:nx),
-        (label = "y axis", range = 1:ny),
-        (label = "z axis", range = 1:nz),
-    ]
-
-    sliders = []
-
-    for (i, (label, range)) in enumerate(slider_params)
-        left_btn = Button(slider_layout[i, 1], label = "◀", width = 30)
-
-        slider = Slider(slider_layout[i, 2:4], range = range, startvalue = range[1])
-        push!(sliders, slider)
-
-        right_btn = Button(slider_layout[i, 5], label = "▶", width = 30)
-
-        Label(slider_layout[i, 6], label, tellwidth = false, halign = :left)
-
-        value_label = Label(slider_layout[i, 7], string(slider.value[]),
-                            tellwidth = false, halign = :center, width = 50)
-        on(slider.value) do val
-            value_label.text = string(val)
-        end
-
-        on(_ -> set_close_to!(slider, slider.value[] - 1), left_btn.clicks)
-        on(_ -> set_close_to!(slider, slider.value[] + 1), right_btn.clicks)
-    end
-
-    sl_yz, sl_xz, sl_xy = sliders
-
-    on(sl_yz.value) do v; plt[:update_yz][](v) end
-    on(sl_xz.value) do v; plt[:update_xz][](v) end
-    on(sl_xy.value) do v; plt[:update_xy][](v) end
-
-    set_close_to!(sl_yz, nx ÷ 2)
-    set_close_to!(sl_xz, ny ÷ 2)
-    set_close_to!(sl_xy, nz ÷ 2)
-
-    # Visibility toggles (one per slice plane)
-    hmaps   = [plt[Symbol(:heatmap_, s)][] for s ∈ (:yz, :xz, :xy)]
-    toggles = [Toggle(slider_layout[i, 8], active = true) for i ∈ 1:3]
-    for (hmap, toggle) in zip(hmaps, toggles)
-        on(toggle.active) do is_active
-            hmap.visible = is_active
-        end
-    end
+    sl_yz, sl_xz, sl_xy = slice_controls!(fig[2, 1], plt, (nx, ny, nz))
 
     display(fig)
 
