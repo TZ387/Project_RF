@@ -90,9 +90,9 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
     Ke_ref = SMatrix{8,8}(Ke_ref_mut)  # immutable static matrix
 
     # ── Cache conductivities and DOF indices per cell ────────────────────────
-    # One Float64 + 8 Int per cell — negligible memory.
+    # One Float64 + 8 Int32 per cell.
     conductivities = Vector{Float64}(undef, n_cells)
-    cell_dofs_all  = Matrix{Int}(undef, n_basefuncs, n_cells)
+    cell_dofs_all  = Matrix{Int32}(undef, n_basefuncs, n_cells)
     buf            = zeros(Int, n_basefuncs)
 
     for (cn, cell) in enumerate(CellIterator(dh))
