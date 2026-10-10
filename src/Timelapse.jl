@@ -143,21 +143,8 @@ function run_heat_timelapse(Qel::Array{Float64,3},
             value_label.text = string(val)
         end
 
-        on(left_btn.clicks) do _
-            current_val = slider.value[]
-            current_idx = findfirst(v -> v == current_val, range)
-            if current_idx !== nothing && current_idx > 1
-                set_close_to!(slider, range[current_idx - 1])
-            end
-        end
-
-        on(right_btn.clicks) do _
-            current_val = slider.value[]
-            current_idx = findfirst(v -> v == current_val, range)
-            if current_idx !== nothing && current_idx < length(range)
-                set_close_to!(slider, range[current_idx + 1])
-            end
-        end
+        on(_ -> set_close_to!(slider, slider.value[] - 1), left_btn.clicks)
+        on(_ -> set_close_to!(slider, slider.value[] + 1), right_btn.clicks)
     end
 
     sl_yz, sl_xz, sl_xy = sliders
