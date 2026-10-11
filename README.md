@@ -9,6 +9,7 @@ A program for RF heating simulation in biological tissue. Given an arbitrary ele
 
 ```julia
 using Pkg
+Pkg.activate(".")
 Pkg.instantiate()
 ```
 
@@ -18,13 +19,15 @@ Pkg.instantiate()
 
 The RF heating procedure uses two or more electrodes to apply alternating electrical current to tissue — one electrode applies an alternating electrical potential, while the other acts as an electrical ground.
 
-The governing equation for the electric potential in the tissue is:
+At typical RF heating frequencies in the range of $10^6$ s$^{-1}$ the field in the tissue can be treated as quasi-static [1], and the governing equation for the electric potential is:
 
-$$\nabla[(\sigma - i\omega\epsilon)(\nabla V)]=0$$
+$$\nabla \cdot [(\sigma - i\omega\epsilon)\nabla V]=0$$
 
-Considering $\epsilon = \epsilon' + i\epsilon''$ and that the real part $\epsilon'$ only introduces a phase shift that does not affect RF heating at typical frequencies in the range of $10^6$ s$^{-1}$, this simplifies to:
+Considering $\epsilon = \epsilon' + i\epsilon''$ and neglecting the displacement current $\omega\epsilon'$ against the conduction current, this simplifies to:
 
-$$\nabla[(\sigma + \omega\epsilon'')(\nabla V)]=0$$
+$$\nabla \cdot [(\sigma + \omega\epsilon'')\nabla V]=0$$
+
+Reference [2] examines the error of both steps: the quasi-static approximation holds up to the MHz range, and neglecting $\epsilon'$ is the larger source of error.
 
 Here, $\sigma$ [S/m] is electrical conductivity, $\omega$ [1/s] is the angular frequency, $V$ [V] is the electric potential, and $\epsilon$ [F/m] is the electrical permittivity of the material.
 
@@ -32,17 +35,21 @@ Note that $\epsilon$ is the product of the vacuum permittivity $\epsilon_0 \appr
 
 $$D = \epsilon E = \epsilon_0 \epsilon_r E$$
 
+Tissue conductivities at a given frequency can be looked up in [3].
+
 Once $V$ is known, the electric field is $\mathbf{E} = -\nabla V$ [V/m], and the ohmic power density (volumetric heat source) deposited in the tissue is:
 
 $$Q_{el} = \frac{1}{2} \sigma |\mathbf{E}|^2 \quad \text{[W/m}^3\text{]}$$
 
+The potential is computed with linear finite elements on a uniform hexahedral grid, using a matrix-free conjugate gradient solver.
+
 ### 1.2 Heat equation
 
-The temperature field $T$ is evolved using the classic heat equation with $Q_{el}$ as a volumetric source:
+The temperature field $T$ is evolved using the classic heat equation with $Q_{el}$ as a volumetric source. This is the bioheat equation used in [4] without the blood-perfusion term:
 
 $$\text{VHC}(\mathbf{x})\, \frac{\partial T}{\partial t} = \nabla \cdot [k(\mathbf{x})\, \nabla T] + Q(\mathbf{x},t)$$
 
-where VHC $= \rho c$ [J/(m³·K)] is the volumetric heat capacity and $k$ [W/(m·K)] is the thermal conductivity, both spatially varying according to the tissue geometry.
+where VHC $= \rho c$ [J/(m³·K)] is the volumetric heat capacity and $k$ [W/(m·K)] is the thermal conductivity, both spatially varying according to the tissue geometry. All outer boundaries are insulated (zero heat flux).
 
 The simulation follows an arbitrary **heating schedule** — an ordered list of `(:on, duration)` and `(:off, duration)` phases, for example:
 
@@ -52,7 +59,7 @@ schedule = [(:on, 30.0), (:off, 60.0), (:on, 15.0)]
 
 During `:on` phases $Q = Q_{el}$; during `:off` phases $Q = 0$.
 
-The time step $\Delta t$ is chosen automatically to satisfy the explicit-Euler stability criterion:
+The equation is solved with finite differences and explicit Euler time stepping. The time step $\Delta t$ is chosen automatically to satisfy the stability criterion:
 
 $$\Delta t \leq \frac{\text{VHC}}{\sum_{f} k_f / \Delta_f^2}$$
 
@@ -66,6 +73,8 @@ The matrix-vector product of the RF solver is parallelised over alternating z-la
 
 ## 2. Usage
 
+The scripts in `Examples/` are complete set-ups meant to be copied and changed; `Example1.jl` runs the whole workflow.
+
 The workflow consists of two steps that can be run independently.
 
 ### Step 1 — RF simulation
@@ -75,6 +84,17 @@ Run `run_simulation` to obtain the electric field results and the ohmic heat sou
 ```julia
 grid, V_dof, Qel, E_mag, E_vec, V = run_simulation(grid_params, rf_params, boundary_conditions)
 ```
+
+`boundary_conditions` assigns a potential to faces of the domain (`"bottom"`, `"top"`, `"left"`, `"right"`, `"front"`, `"back"`); faces that are not listed are insulating. Each entry is a function of the position `x`, which is centred in x and y and runs in z from 0 at the `"bottom"` face to `lz` at the `"top"` face:
+
+```julia
+boundary_conditions = Dict(
+    "bottom" => (x, t) -> 10.0,   # electrode at 10 V
+    "top"    => (x, t) -> 0.0,    # ground
+)
+```
+
+`Qel` and `E_mag` are cell arrays of size `(nx, ny, nz)`, `E_vec` is `(3, nx, ny, nz)`, and `V` is the potential at the grid nodes, `(nx+1, ny+1, nz+1)`.
 
 ### Step 2 — Heat simulation
 
@@ -90,23 +110,26 @@ Set `create_timelapse = true` to display a live-updating cross-section plot of t
 T_final = run_heat_simulation(Qel, grid_params, heat_params; create_timelapse = true)
 ```
 
-The plot refreshes `n_update` times per schedule phase. The colour scale is updated automatically to the current field range at each refresh.
+The plot refreshes `n_update` times per schedule phase. The colour scale is updated automatically to the current field range at each refresh, unless `T_plot_min` and `T_plot_max` are set in `HeatParams`.
 
 ### Saving plots
 
-To save plots to the `Images` subfolder, pass a filename to `plot_graphs`:
+To save the plots, pass a path prefix to `plot_graphs`; this writes `Images/Example6_Franco_a.png` to `Images/Example6_Franco_e.png`:
 
 ```julia
-plot_graphs(material_indices, grid_params, Qel, E_mag, E_vec, V, "Example6_Franco")
+plot_graphs(material_indices, grid_params, Qel, E_mag, E_vec, V, "Images/Example6_Franco")
 ```
 
 ### HDF5 Data Handling
 
-Simulation results can be stored with `save_simulation` in `.h5` files using HDF5.jl. This format is efficient, portable, and well-suited for large numerical datasets. The data structure is similar to what you would see in the MATLAB workspace, making it intuitive to explore.
+Simulation results can be stored in `.h5` files with `save_simulation` and read back with `load_simulation`, for example to run the heat simulation later without repeating the RF solve:
 
-You can inspect these files using HDFView:
+```julia
+save_simulation("Example1.h5", grid_params, material_indices; Qel=Qel, E_mag=E_mag, V=V)
+grid_params, material_indices, data = load_simulation("Example1.h5")   # data.Qel, data.E_mag, data.V
+```
 
-- <https://www.hdfgroup.org/download-hdfview/>
+The files can be inspected with [HDFView](https://www.hdfgroup.org/download-hdfview/).
 
 ### Enabling multiple threads
 
@@ -123,7 +146,7 @@ By default Julia starts with a single thread, so the parallel kernels described 
 **Command line / other environments** — pass the flag directly or set the environment variable:
 
 ```bash
-julia --threads auto example1.jl
+julia --project=. --threads auto Examples/Example1.jl
 # or
 export JULIA_NUM_THREADS=auto
 ```
@@ -132,8 +155,10 @@ You can confirm the thread count inside Julia with `Threads.nthreads()`.
 
 ## 3. Literature
 
-[1] Quasi-Static Electromagnetic Dosimetry: From Basic Principles to Examples of Applications
+[1] D. Andreuccetti and N. Zoppetti, "Quasi-Static Electromagnetic Dosimetry: From Basic Principles to Examples of Applications", *Int. J. Occup. Saf. Ergon.* 12(2), 201–215 (2006). [doi:10.1080/10803548.2006.11076682](https://doi.org/10.1080/10803548.2006.11076682)
 
-[2] Quasi-Static Approximation Error of Electric Field Analysis for Transcranial Current Stimulation
+[2] G. Gaugain, L. Quéguiner, M. Bikson, R. Sauleau, M. Zhadobov, J. Modolo and D. Nikolayev, "Quasi-static approximation error of electric field analysis for transcranial current stimulation", *J. Neural Eng.* 20, 016027 (2023). [doi:10.1088/1741-2552/acb14d](https://doi.org/10.1088/1741-2552/acb14d)
 
-[3] Numerical Study of Hyper‐Thermic Laser Lipolysis With 1,064 nm Nd:YAG Laser in Human Subjects
+[3] D. Andreuccetti, R. Fossi and C. Petrucci, "An Internet resource for the calculation of the dielectric properties of body tissues in the frequency range 10 Hz – 100 GHz", IFAC-CNR, Florence (1997). Based on data published by C. Gabriel et al. in 1996. <http://niremf.ifac.cnr.it/tissprop/>
+
+[4] M. Milanic, B. Tasic Muc, N. Lukac and M. Lukac, "Numerical Study of Hyper‐Thermic Laser Lipolysis With 1,064 nm Nd:YAG Laser in Human Subjects", *Lasers Surg. Med.* 51(10), 897–909 (2019). [doi:10.1002/lsm.23124](https://doi.org/10.1002/lsm.23124)
