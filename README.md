@@ -29,7 +29,7 @@ $$\nabla \cdot [(\sigma + \omega\epsilon'')\nabla V]=0$$
 
 Reference [2] examines the error of both steps: the quasi-static approximation holds up to the MHz range, and neglecting $\epsilon'$ is the larger source of error.
 
-Here, $\sigma$ [S/m] is electrical conductivity, $\omega$ [1/s] is the angular frequency, $V$ [V] is the electric potential, and $\epsilon$ [F/m] is the electrical permittivity of the material.
+Here, $\sigma$ [S/m] is electrical conductivity, $\omega = 2\pi f$ [rad/s] is the angular frequency, $V$ [V] is the electric potential, and $\epsilon$ [F/m] is the electrical permittivity of the material.
 
 Note that $\epsilon$ is the product of the vacuum permittivity $\epsilon_0 \approx 8.85 \times 10^{-12}$ F/m and the relative permittivity $\epsilon_r$:
 

@@ -42,7 +42,7 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
 
     sigma     = rf_params.sigma
     eps_im    = rf_params.epsilon_im
-    frequency = rf_params.ω
+    ω         = rf_params.ω
 
     basis      = Lagrange{Ferrite.RefHexahedron, 1}()
     quad       = QuadratureRule{Ferrite.RefHexahedron}(2)
@@ -97,7 +97,7 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
         celldofs!(buf, dh, cn)
         cell_dofs_all[:, cn] .= buf
         ix, iy, iz = cell_index_to_xyz(cn, nx_max, ny_max)
-        conductivities[cn] = sigma[ix, iy, iz] + frequency * eps_im[ix, iy, iz]
+        conductivities[cn] = sigma[ix, iy, iz] + ω * eps_im[ix, iy, iz]
     end
 
     # ── Build RHS f and Jacobi diagonal d ───────────────────────────────────

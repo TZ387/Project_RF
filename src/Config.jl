@@ -9,7 +9,7 @@ export RFParams, HeatParams, HeatSchedule, GridParams, setup_material_properties
 struct RFParams
     sigma::Array{Float64, 3}  # Electrical conductivity matrix [S/m]
     epsilon_im::Array{Float64, 3}  # Permittivity matrix [F/m]
-    ω::Float64  # (Circular) Frequency of the RF signal [Hz]
+    ω::Float64  # Angular frequency of the RF signal [rad/s], ω = 2πf
 end
 
 # Ordered sequence of heating/cooling phases.

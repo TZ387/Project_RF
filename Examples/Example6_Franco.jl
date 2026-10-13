@@ -52,7 +52,7 @@ function main()
     rf_params = RFParams(
         sigma,      # Electrical conductivity matrix [S/m]
         epsilon_im, # Permittivity matrix [F/m]
-        1e6,        # ω = (Circular) Frequency of the RF signal [Hz]
+        1e6,        # ω = Angular frequency of the RF signal [rad/s]
     )
 
 
