@@ -139,6 +139,7 @@ function plot_graphs(material_indices, grid_params, Qel, E_mag, E_vec, V, filena
     display(GLMakie.Screen(), fig5)
 
     if filename !== nothing
+        mkpath(dirname(filename))
         save("$(filename)_a.png", fig1)
         save("$(filename)_b.png", fig2)
         save("$(filename)_c.png", fig3)
