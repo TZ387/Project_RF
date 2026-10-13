@@ -79,14 +79,15 @@ function plot_field_directions(E_vec, grid_params; arrow_density = 6, title = "E
 
     x = LinRange(-grid_params.lx/2, grid_params.lx/2, grid_params.nx)
     y = LinRange(-grid_params.ly/2, grid_params.ly/2, grid_params.ny)
-    z = LinRange(grid_params.lz, 0, grid_params.nz)
+    z = LinRange(0, grid_params.lz, grid_params.nz)
 
     # aspect = (1,1,1) forces all three visual axes to the same length regardless
     # of data range, so a flat domain like Example 1 still looks cubic.
     # limits! sets the data extent so Axis3 knows what range to fit into that cube.
+    # The z limits are reversed to put the "bottom" face on top, as in plot_slices.
     ax = Axis3(fig[1, 1], aspect = (1, 1, 1),
                xlabel = "x [m]", ylabel = "y [m]", zlabel = "z [m]")
-    limits!(ax, minimum(x), maximum(x), minimum(y), maximum(y), minimum(z), maximum(z))
+    limits!(ax, minimum(x), maximum(x), minimum(y), maximum(y), maximum(z), minimum(z))
 
     # With aspect=(1,1,1) all axes are visually equal, so we use the same
     # number of arrow divisions along each axis regardless of physical size.
