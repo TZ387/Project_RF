@@ -169,17 +169,19 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
     return V_dof, dh, cellvalues
 end
 
-# Calculate electric field magnitude E [V/m], ohmic power density Q_el [W/m^3],
-# and electric field vector E_vec [V/m] with shape (3, nx, ny, nz).
+# Calculate electric field magnitude E [V/m], power density Q_el [W/m^3] from
+# conduction and dielectric losses, and electric field vector E_vec [V/m] with
+# shape (3, nx, ny, nz).
 # E = -grad(V), so each component is the negated gradient of the voltage field.
 # E_vec[1/2/3, x, y, z] gives the x/y/z component; (3, nx, ny, nz) layout keeps
 # the three components of each cell contiguous in memory (column-major).
-function calculate_fields(cellvalues::CellValues, dh::DofHandler, V_dof::AbstractVector{T}, sigma, grid_params) where T
+function calculate_fields(cellvalues::CellValues, dh::DofHandler, V_dof::AbstractVector{T}, rf_params::Config.RFParams, grid_params) where T
     n         = getnbasefunctions(cellvalues)
     cell_dofs = zeros(Int, n)
     nqp       = getnquadpoints(cellvalues)
-    Q_el      = similar(sigma)
-    E_mag     = similar(sigma)
+    sigma_eff = rf_params.sigma .+ rf_params.ω .* rf_params.epsilon_im
+    Q_el      = similar(sigma_eff)
+    E_mag     = similar(sigma_eff)
     E_vec     = zeros(T, 3, grid_params.nx, grid_params.ny, grid_params.nz)
 
     for (cell_num, cell) in enumerate(CellIterator(dh))
@@ -199,7 +201,7 @@ function calculate_fields(cellvalues::CellValues, dh::DofHandler, V_dof::Abstrac
         gy /= nqp
         gz /= nqp
 
-        Q_el[x, y, z]    = 0.5 * sigma[x, y, z] * (gx^2 + gy^2 + gz^2)
+        Q_el[x, y, z]    = 0.5 * sigma_eff[x, y, z] * (gx^2 + gy^2 + gz^2)
         E_mag[x, y, z]   = sqrt(gx^2 + gy^2 + gz^2)
         E_vec[1, x, y, z] = -gx
         E_vec[2, x, y, z] = -gy

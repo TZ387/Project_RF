@@ -4,7 +4,7 @@ Instructions for AI coding agents working in this repository.
 
 ## Project
 
-`prrf` is a Julia package (Julia ≥ 1.10) for simulating RF heating in biological tissue. It solves for the electric potential on a 3D voxel grid, derives the electric field and the ohmic heat source `Qel`, and then evolves the temperature field over time. Theory and usage are in [README.md](README.md).
+`prrf` is a Julia package (Julia ≥ 1.10) for simulating RF heating in biological tissue. It solves for the electric potential on a 3D voxel grid, derives the electric field and the heat source `Qel`, and then evolves the temperature field over time. Theory and usage are in [README.md](README.md).
 
 ## Layout
 

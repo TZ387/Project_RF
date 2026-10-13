@@ -1,6 +1,6 @@
 # prrf
 
-A program for RF heating simulation in biological tissue. Given an arbitrary electrode geometry and boundary conditions, it computes the electric potential, electric field, and ohmic heat dissipation in the tissue, and then uses that dissipation as a source term to evolve the temperature field over time.
+A program for RF heating simulation in biological tissue. Given an arbitrary electrode geometry and boundary conditions, it computes the electric potential, electric field, and heat dissipation in the tissue, and then uses that dissipation as a source term to evolve the temperature field over time.
 
 ## Requirements
 
@@ -37,9 +37,9 @@ $$D = \epsilon E = \epsilon_0 \epsilon_r E$$
 
 Tissue conductivities at a given frequency can be looked up in [3].
 
-Once $V$ is known, the electric field is $\mathbf{E} = -\nabla V$ [V/m], and the ohmic power density (volumetric heat source) deposited in the tissue is:
+Once $V$ is known, the electric field is $\mathbf{E} = -\nabla V$ [V/m], and the power density (volumetric heat source) deposited in the tissue by conduction and dielectric losses is:
 
-$$Q_{el} = \frac{1}{2} \sigma |\mathbf{E}|^2 \quad \text{[W/m}^3\text{]}$$
+$$Q_{el} = \frac{1}{2} (\sigma + \omega\epsilon'') |\mathbf{E}|^2 \quad \text{[W/m}^3\text{]}$$
 
 The potential is computed with linear finite elements on a uniform hexahedral grid, using a matrix-free conjugate gradient solver.
 
@@ -79,7 +79,7 @@ The workflow consists of two steps that can be run independently.
 
 ### Step 1 — RF simulation
 
-Run `run_simulation` to obtain the electric field results and the ohmic heat source `Qel`:
+Run `run_simulation` to obtain the electric field results and the heat source `Qel`:
 
 ```julia
 grid, V_dof, Qel, E_mag, E_vec, V = run_simulation(grid_params, rf_params, boundary_conditions)
