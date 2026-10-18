@@ -19,7 +19,7 @@
 #
 # ── CPU parallelisation ───────────────────────────────────────────────────────
 #
-# The solver is called from inside a Threads.@spawn task in TimelapseCreation.
+# The solver is called from inside a Threads.@spawn task in Timelapse.
 # Threads.@threads is NOT safe when nested inside @spawn — it deadlocks.
 #
 # Instead, parallelism is achieved by manually spawning one Task per z-slice
@@ -36,7 +36,7 @@
 #   1. Define  struct CUDABackend <: AbstractHeatBackend end
 #   2. Add a CuArray method for heat_step!
 #   3. Pass  backend = CUDABackend()  to solve_heat_phase
-# Nothing else in this file or in TimelapseCreation needs to change.
+# Nothing else in this file or in Timelapse needs to change.
 
 module HeatSolver
 
