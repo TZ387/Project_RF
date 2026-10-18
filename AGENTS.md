@@ -53,7 +53,7 @@ julia --project=. --threads auto Examples/Example1.jl  # run an example
 
 - There is no test suite and no CI. Loading the package is the only quick check.
 - The first load precompiles GLMakie and can take several minutes.
-- The examples open GLMakie windows, so they need a display, and they solve a grid of about 2 million cells. They are not a quick check.
+- The examples open GLMakie windows, so they need a display, and they solve grids of 2 to 6.5 million cells. They are not a quick check.
 
 ## Things to know before changing the code
 
