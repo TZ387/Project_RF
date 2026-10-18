@@ -42,7 +42,7 @@ module HeatSolver
 
 using ..Config
 
-export compute_stable_dt, solve_heat_phase, cpu_backend
+export compute_stable_dt, solve_heat_phase
 
 # ── Backend abstraction ───────────────────────────────────────────────────────
 

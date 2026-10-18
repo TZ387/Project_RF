@@ -3,7 +3,7 @@
 module Config
 
 # Export the structures and functions to make them available outside this module
-export RFParams, HeatParams, HeatSchedule, GridParams, setup_material_properties, create_coordinate_grids
+export RFParams, HeatParams, GridParams, setup_material_properties, create_coordinate_grids
 
 # Parameters for RF problem
 struct RFParams
