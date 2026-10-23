@@ -10,14 +10,6 @@ using ..Config
 
 export solve_rf, calculate_fields, convert_V
 
-function cell_index_to_xyz(cell_number, nx_max, ny_max)
-    cell_number -= 1
-    x = (cell_number % (nx_max * ny_max)) % nx_max + 1
-    y = div((cell_number % (nx_max * ny_max)), nx_max) + 1
-    z = div(cell_number, nx_max * ny_max) + 1
-    return x, y, z
-end
-
 # Jacobi (diagonal) preconditioner — stores 1/d[i] directly.
 struct JacobiPrecond{V <: AbstractVector}
     d_inv::V
@@ -78,10 +70,6 @@ end
 function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridParams, boundary_conditions;
                   use_gpu::Bool = false)
 
-    sigma     = rf_params.sigma
-    eps_im    = rf_params.epsilon_im
-    ω         = rf_params.ω
-
     basis      = Lagrange{Ferrite.RefHexahedron, 1}()
     quad       = QuadratureRule{Ferrite.RefHexahedron}(2)
     cellvalues = CellValues(quad, basis)
@@ -131,16 +119,13 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
     Ke_ref = SMatrix{8,8}(Ke_ref_mut)  # immutable static matrix
 
     # ── Cache conductivities and DOF indices per cell ────────────────────────
-    # One Float64 + 8 Int32 per cell.
-    conductivities = Vector{Float64}(undef, n_cells)
+    # Cells are numbered x fastest, like the (nx, ny, nz) material arrays.
+    conductivities = vec(rf_params.sigma .+ rf_params.ω .* rf_params.epsilon_im)
     cell_dofs_all  = Matrix{Int32}(undef, n_basefuncs, n_cells)
     buf            = zeros(Int, n_basefuncs)
-
-    for (cn, cell) in enumerate(CellIterator(dh))
+    for cn in 1:n_cells
         celldofs!(buf, dh, cn)
         cell_dofs_all[:, cn] .= buf
-        ix, iy, iz = cell_index_to_xyz(cn, nx_max, ny_max)
-        conductivities[cn] = sigma[ix, iy, iz] + ω * eps_im[ix, iy, iz]
     end
 
     # ── Build RHS f and Jacobi diagonal d ───────────────────────────────────
