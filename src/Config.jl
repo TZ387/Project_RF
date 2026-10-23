@@ -53,9 +53,9 @@ end
 # Function to create 3D coordinate grids from grid parameters
 function create_coordinate_grids(grid_params::GridParams)
     # Create 3D coordinate grids - contains actual coordinates in meters
-    # Use (index - 0.5) to get cell center coordinates
-    X = repeat(reshape((1:grid_params.nx) .- 0.5, grid_params.nx, 1, 1) .* (grid_params.lx / grid_params.nx), 1, grid_params.ny, grid_params.nz)
-    Y = repeat(reshape((1:grid_params.ny) .- 0.5, 1, grid_params.ny, 1) .* (grid_params.ly / grid_params.ny), grid_params.nx, 1, grid_params.nz)
+    # Use (index - 0.5) to get cell center coordinates; x and y are centred like the Ferrite grid
+    X = repeat(reshape((1:grid_params.nx) .- 0.5, grid_params.nx, 1, 1) .* (grid_params.lx / grid_params.nx) .- grid_params.lx / 2, 1, grid_params.ny, grid_params.nz)
+    Y = repeat(reshape((1:grid_params.ny) .- 0.5, 1, grid_params.ny, 1) .* (grid_params.ly / grid_params.ny) .- grid_params.ly / 2, grid_params.nx, 1, grid_params.nz)
     Z = repeat(reshape((1:grid_params.nz) .- 0.5, 1, 1, grid_params.nz) .* (grid_params.lz / grid_params.nz), grid_params.nx, grid_params.ny, 1)
     
     return X, Y, Z
