@@ -13,6 +13,18 @@ using CUDA: CUDA
             @test T_gpu isa Array
             @test T_gpu ≈ run_heat_simulation(Q, gp, hp) rtol = 1e-12
         end
+
+        @testset "RF solver matches the CPU" begin
+            gp = GridParams(0.09, 0.09, 0.05, 18, 18, 10)
+            sigma = [0.1 + 0.05 * l for i in 1:18, j in 1:18, l in 1:10]
+            rf = RFParams(sigma, fill(1e-9, size(sigma)), 1e6)
+            electrode(x, t) = abs(x[1]) <= 0.02 && abs(x[2]) <= 0.02 ? 100.0 * (1 + x[2] / 0.02) : nothing
+            bc = Dict("top" => electrode, "bottom" => (x, t) -> 0.0)
+            on_gpu = @test_logs min_level = Logging.Warn run_simulation(gp, rf, bc; use_gpu = true)
+            for (gpu, cpu) in zip(on_gpu[2:end], run_simulation(gp, rf, bc)[2:end])  # V_dof, Qel, E_mag, E_vec, V
+                @test gpu ≈ cpu rtol = 1e-6
+            end
+        end
     else
         @test_skip CUDA.functional()
     end

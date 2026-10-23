@@ -80,7 +80,7 @@ The heat update kernel is parallelised (if this is enabled, see section Enabling
 
 The matrix-vector product of the RF solver is parallelised over alternating z-layers and uses all Julia threads.
 
-With `use_gpu = true` (see Usage) the heat update runs on an NVIDIA GPU through [CUDA.jl](https://cuda.juliagpu.org/), one GPU thread per cell, in double precision like the CPU code. On Example 1's grid an RTX 2060 SUPER is about ten times faster than eight CPU threads. The first GPU run in a Julia session takes about 15 s longer, while CUDA starts and compiles the kernel.
+With `use_gpu = true` (see Usage) the heat update and the conjugate gradient iterations of the RF solve run on an NVIDIA GPU through [CUDA.jl](https://cuda.juliagpu.org/), one GPU thread per cell, in double precision like the CPU code. On an RTX 2060 SUPER compared with eight CPU threads, the heat simulation on Example 1's grid is about ten times faster, and `run_simulation` on Example 6's grid about four times. The first GPU run in a Julia session takes about 15 s longer, while CUDA starts and compiles the kernels.
 
 ## 2. Usage
 
@@ -106,6 +106,8 @@ boundary_conditions = Dict(
 ```
 
 `Qel` and `E_mag` are cell arrays of size `(nx, ny, nz)`, `E_vec` is `(3, nx, ny, nz)`, and `V` is the potential at the grid nodes, `(nx+1, ny+1, nz+1)`.
+
+Pass `use_gpu = true` to solve on an NVIDIA GPU (Section 1.3); the results are returned as ordinary arrays either way.
 
 ### Step 2 — Heat simulation
 

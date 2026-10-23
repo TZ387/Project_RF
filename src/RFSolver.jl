@@ -1,5 +1,6 @@
 module RFSolver
 
+using CUDA
 using Ferrite
 using LinearAlgebra
 using IterativeSolvers
@@ -18,12 +19,48 @@ function cell_index_to_xyz(cell_number, nx_max, ny_max)
 end
 
 # Jacobi (diagonal) preconditioner — stores 1/d[i] directly.
-struct JacobiPrecond
-    d_inv::Vector{Float64}
+struct JacobiPrecond{V <: AbstractVector}
+    d_inv::V
 end
 LinearAlgebra.ldiv!(y::AbstractVector, P::JacobiPrecond, x::AbstractVector) = (y .= x .* P.d_inv)
 LinearAlgebra.ldiv!(P::JacobiPrecond, x::AbstractVector) = (x .*= P.d_inv)
 Base.:\(P::JacobiPrecond, x::AbstractVector) = x .* P.d_inv
+
+# Contribution c * Ke_ref * v_local of cell cn and the cell's DOFs, as stack-allocated
+# static vectors. Shared by the CPU and GPU matvec.
+Base.@propagate_inbounds function cell_product(v, cell_dofs, conductivities, Ke_ref, cn)
+    dofs = ntuple(i -> cell_dofs[i, cn], Val(8))
+    return dofs, conductivities[cn] * (Ke_ref * SVector(map(i -> v[i], dofs)))
+end
+
+# Adds every cell's contribution to y. On the CPU, z-layers of equal parity share no DOFs,
+# so each half runs in parallel; on the GPU, each cell is a thread and adds atomically.
+function add_cells!(y, v, cell_dofs, conductivities, Ke_ref, n_layer)
+    for parity in 1:2
+        Threads.@threads for iz in parity:2:length(conductivities) ÷ n_layer
+            @inbounds for cn in (iz - 1) * n_layer + 1 : iz * n_layer
+                dofs, lr = cell_product(v, cell_dofs, conductivities, Ke_ref, cn)
+                for i in 1:8
+                    y[dofs[i]] += lr[i]
+                end
+            end
+        end
+    end
+end
+
+add_cells!(y::CuArray, v, cell_dofs, conductivities, Ke_ref, _) =
+    @cuda threads = 256 blocks = cld(length(conductivities), 256) add_cells_kernel!(y, v, cell_dofs, conductivities, Ke_ref)
+
+function add_cells_kernel!(y, v, cell_dofs, conductivities, Ke_ref)
+    cn = (blockIdx().x - 1) * blockDim().x + threadIdx().x
+    if cn <= length(conductivities)
+        dofs, lr = @inbounds cell_product(v, cell_dofs, conductivities, Ke_ref, cn)
+        for i in 1:8
+            @inbounds CUDA.@atomic y[dofs[i]] += lr[i]
+        end
+    end
+    return
+end
 
 # Solve the RF Laplace problem
 #   div[(sigma + omega*epsilon_im) * grad(V)] = 0
@@ -38,7 +75,10 @@ Base.:\(P::JacobiPrecond, x::AbstractVector) = x .* P.d_inv
 # an 8x8 dense matvec scaled by a scalar, with no quadrature at runtime.
 # This is 8x fewer FLOPs per iteration than recomputing quadrature each time,
 # and lower memory bandwidth than a sparse matvec on an explicit K.
-function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridParams, boundary_conditions)
+#
+# With use_gpu = true the CG iterations run on the GPU; set-up and result stay on the CPU.
+function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridParams, boundary_conditions;
+                  use_gpu::Bool = false)
 
     sigma     = rf_params.sigma
     eps_im    = rf_params.epsilon_im
@@ -124,44 +164,27 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
     end
 
     # ── Matrix-free matvec y = K_eff * v ────────────────────────────────────
-    # lv and lr are SVectors: constructed from a tuple gather, multiplied as
-    # SMatrix * SVector — fully stack-allocated, no heap pressure per call.
-    # z-layers of equal parity share no DOFs, so each half runs in parallel.
+    to_device(A) = use_gpu ? CuArray(A) : A
+    cell_dofs, cell_conductivities, dirichlet_dofs = to_device.((cell_dofs_all, conductivities, ch.prescribed_dofs))
 
     function matvec!(y, v)
         fill!(y, 0.0)
-        n_layer = nx_max * ny_max
-        for parity in 1:2
-            Threads.@threads for iz in parity:2:grid_params.nz
-                @inbounds for cn in (iz - 1) * n_layer + 1 : iz * n_layer
-                    dofs = @view cell_dofs_all[:, cn]
-                    c    = conductivities[cn]
-                    lv   = SVector{8}(v[dofs[1]], v[dofs[2]], v[dofs[3]], v[dofs[4]],
-                                      v[dofs[5]], v[dofs[6]], v[dofs[7]], v[dofs[8]])
-                    lr   = Ke_ref * lv
-                    for i in 1:n_basefuncs
-                        y[dofs[i]] += c * lr[i]
-                    end
-                end
-            end
-        end
-        # Identity rows for Dirichlet DOFs
-        for dof in ch.prescribed_dofs
-            y[dof] = v[dof]
-        end
+        add_cells!(y, v, cell_dofs, cell_conductivities, Ke_ref, nx_max * ny_max)
+        view(y, dirichlet_dofs) .= view(v, dirichlet_dofs)  # identity rows
         return y
     end
 
     K_mf = LinearMap(matvec!, n_dofs; ismutating=true, issymmetric=true, isposdef=true)
 
     # ── Jacobi-preconditioned CG ─────────────────────────────────────────────
-    P = JacobiPrecond(1.0 ./ d)
+    P = JacobiPrecond(to_device(1.0 ./ d))
 
     V_dof = zeros(n_dofs)
     apply!(V_dof, ch)  # warm-start from Dirichlet values
 
-    V_dof, history = cg!(V_dof, K_mf, f; Pl=P, reltol=1e-8, maxiter=3000,
+    V_dof, history = cg!(to_device(V_dof), K_mf, to_device(f); Pl=P, reltol=1e-8, maxiter=3000,
                           initially_zero=false, log=true)
+    V_dof = Array(V_dof)
 
     if !history.isconverged
         @warn "CG did not converge after $(history.iters) iterations " *
