@@ -12,7 +12,7 @@ Instructions for AI coding agents working in this repository.
 - `src/Config.jl` — `GridParams`, `RFParams`, `HeatParams`, material property setup, coordinate grids.
 - `src/GridSetup.jl` — Ferrite hexahedral grid.
 - `src/RFSolver.jl` — RF potential solve (matrix-free Jacobi-preconditioned CG) and field calculation.
-- `src/HeatSolver.jl` — explicit finite-difference heat solver, CPU-parallel.
+- `src/HeatSolver.jl` — explicit finite-difference heat solver, CPU-parallel or on a CUDA GPU.
 - `src/Timelapse.jl` — live GLMakie plot of the heat simulation.
 - `src/Plotting.jl` — slice plots and the E-field direction plot.
 - `src/RunSimulation.jl` — the two entry points, `run_simulation` and `run_heat_simulation`.
@@ -63,5 +63,6 @@ julia --project=. --threads auto Examples/Example1.jl  # run an example
 - **Coordinates.** The Ferrite grid, the `x` passed to boundary-condition functions, the cell centres from `create_coordinate_grids` and the plots are all centred in x and y (`[-l/2, l/2]`) and run `[0, lz]` in z. z is depth, so `setup_grid` swaps Ferrite's `"top"` and `"bottom"` face names to make `"top"` the z = 0 face.
 - **Uniform grid assumption.** `solve_rf` computes one reference element stiffness matrix and reuses it for every cell. This is only valid for the uniform hex grid that `setup_grid` produces.
 - **Threading.** The heat solver runs inside a `Threads.@spawn` task, where `Threads.@threads` deadlocks, and GLMakie observables may only be written from the main thread. Read the header comments in `src/HeatSolver.jl` and `src/Timelapse.jl` before changing either.
+- **GPU.** `use_gpu = true` runs the heat time stepping with CUDA.jl, in Float64 like the CPU code; the CPU and GPU paths share the per-cell update `stepped_temperature`. `test/gpu.jl` compares GPU with CPU results and is skipped when no usable GPU is present.
 - **Ignored files.** `*.h5`, `Images/`, `Results/`, `.vscode/`, `prompt.txt` and `benchmark_solvers.jl` are git-ignored output or local scratch. Do not force-add them.
 - **Dependencies.** `Manifest.toml` is committed and also covers `test/Project.toml`, and every dependency in `Project.toml` has a `[compat]` entry. Change them only when the task is a dependency change.

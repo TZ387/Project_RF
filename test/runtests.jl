@@ -9,5 +9,6 @@ disable_logging(Logging.Info)  # hide the solvers' progress messages
     include("rf_solver.jl")
     include("heat_solver.jl")
     include("simulation_io.jl")
+    include("gpu.jl")
     include("examples.jl")
 end

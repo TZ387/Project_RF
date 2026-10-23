@@ -5,6 +5,7 @@ A program for RF heating simulation in biological tissue. Given an arbitrary ele
 ## Requirements
 
 - [Julia](https://julialang.org/) ≥ 1.10
+- Optional: an NVIDIA GPU with a current driver, for `use_gpu = true`
 - Dependencies are listed in `Project.toml` and managed by Julia's built-in package manager. To install them, open a Julia REPL in the project directory and run:
 
 ```julia
@@ -73,11 +74,13 @@ $$\Delta t \leq \frac{\text{VHC}}{\sum_{f} k_f / \Delta_f^2}$$
 
 evaluated over all cells, with a safety factor of 0.9. The sum runs over the faces of a cell, $k_f$ is the harmonic mean of the conductivities of the two cells sharing face $f$, and $\Delta_f$ is the grid spacing across it.
 
-### 1.3 CPU parallelisation
+### 1.3 Parallelisation
 
 The heat update kernel is parallelised (if this is enabled, see section Enabling Multiple Threads below) by partitioning the grid's z-dimension into chunks, one per worker thread. The worker count is set automatically to $\min(N_\text{Julia threads},\ \lfloor N_\text{logical cores} / 2 \rfloor)$, excluding hyperthreads which share the FPU and provide no benefit for dense arithmetic. The active count is printed at the start of each phase.
 
 The matrix-vector product of the RF solver is parallelised over alternating z-layers and uses all Julia threads.
+
+With `use_gpu = true` (see Usage) the heat update runs on an NVIDIA GPU through [CUDA.jl](https://cuda.juliagpu.org/), one GPU thread per cell, in double precision like the CPU code. On Example 1's grid an RTX 2060 SUPER is about ten times faster than eight CPU threads. The first GPU run in a Julia session takes about 15 s longer, while CUDA starts and compiles the kernel.
 
 ## 2. Usage
 
@@ -119,6 +122,8 @@ T_final = run_heat_simulation(Qel, grid_params, heat_params; create_timelapse = 
 ```
 
 The plot refreshes `n_update` times per schedule phase. The colour scale is updated automatically to the current field range at each refresh, unless `T_plot_min` and `T_plot_max` are set in `HeatParams`.
+
+Set `use_gpu = true` to run the time stepping on an NVIDIA GPU (Section 1.3); it works with or without the live plot.
 
 ### Saving plots
 

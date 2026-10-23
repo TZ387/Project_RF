@@ -3,7 +3,11 @@ uuid = "b5d11546-cacb-4622-8a6b-042bba915b18"
 version = "0.1.0"
 authors = ["Tilen Žel <tilen.zel@gmail.com>"]
 
+[workspace]
+projects = ["test"]
+
 [deps]
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 Ferrite = "c061ca5d-56c9-439f-9c0e-210fe06d3992"
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 HDF5 = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
@@ -14,6 +18,7 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
+CUDA = "6.4.2"
 Ferrite = "1.4.0"
 GLMakie = "0.13.10"
 HDF5 = "0.17.3"
@@ -22,6 +27,3 @@ LinearAlgebra = "1"
 LinearMaps = "3.11.4"
 Printf = "1"
 StaticArrays = "1.9.18"
-
-[workspace]
-projects = ["test"]

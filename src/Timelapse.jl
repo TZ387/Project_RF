@@ -54,7 +54,7 @@ end
 # ── Main entry point ──────────────────────────────────────────────────────────
 
 """
-    run_heat_timelapse(Qel, heat_params, grid_params)
+    run_heat_timelapse(Qel, heat_params, grid_params; backend)
 
 Run the multi-phase heat simulation on a worker thread while displaying a
 live-updating 3D volumeslices plot (with X/Y/Z sliders) on the main thread.
@@ -65,7 +65,8 @@ of plot snapshots produced by the worker.
 """
 function run_heat_timelapse(Qel::Array{Float64,3},
                             heat_params::Config.HeatParams,
-                            grid_params::Config.GridParams)
+                            grid_params::Config.GridParams;
+                            backend = HeatSolver.cpu_backend())
 
     nx, ny, nz = grid_params.nx, grid_params.ny, grid_params.nz
 
@@ -121,10 +122,10 @@ function run_heat_timelapse(Qel::Array{Float64,3},
 
     # ── Worker thread ─────────────────────────────────────────────────────────
     sim_task = Threads.@spawn begin
-        T = HeatSolver.solve_heat_schedule(Qel, heat_params, grid_params;
+        T = HeatSolver.solve_heat_schedule(Qel, heat_params, grid_params; backend,
                 update_cb = (T_curr, t_sim, label) -> begin
-                    T_snap     = copy(T_curr)       # copy on worker thread — safe
-                    Tmin, Tmax = extrema(T_curr)
+                    T_snap     = Array(T_curr)      # CPU copy on worker thread — safe
+                    Tmin, Tmax = extrema(T_snap)
                     Tmax       = Tmax ≈ Tmin ? Tmin + 1.0 : Tmax
                     put!(snapshot_ch, PlotSnapshot(T_snap, t_sim, label, Tmin, Tmax))
                 end)

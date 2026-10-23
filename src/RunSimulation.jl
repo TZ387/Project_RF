@@ -1,11 +1,14 @@
 module RunSimulation
 
+using CUDA
 using ..GridSetup
 using ..RFSolver
 using ..HeatSolver
 using ..Timelapse
 
 export run_simulation, run_heat_simulation
+
+check_gpu(use_gpu) = use_gpu && !CUDA.functional() && error("use_gpu = true, but CUDA.jl found no usable NVIDIA GPU")
 
 function run_simulation(grid_params, rf_params, boundary_conditions)
 
@@ -24,15 +27,18 @@ function run_simulation(grid_params, rf_params, boundary_conditions)
 end
 
 function run_heat_simulation(Qel, grid_params, heat_params;
-                        create_timelapse::Bool = false)
+                        create_timelapse::Bool = false, use_gpu::Bool = false)
+
+    check_gpu(use_gpu)
+    backend = use_gpu ? HeatSolver.CUDABackend() : HeatSolver.cpu_backend()
 
     if create_timelapse
         @info "Running heat simulation with live plot..."
-        return Timelapse.run_heat_timelapse(Qel, heat_params, grid_params)
+        return Timelapse.run_heat_timelapse(Qel, heat_params, grid_params; backend)
     end
 
     @info "Running heat simulation (no live plot)..."
-    return HeatSolver.solve_heat_schedule(Qel, heat_params, grid_params)
+    return HeatSolver.solve_heat_schedule(Qel, heat_params, grid_params; backend)
 end
 
 end  # module RunSimulation
