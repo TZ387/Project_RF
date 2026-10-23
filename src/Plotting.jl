@@ -1,11 +1,19 @@
 module Plotting
 
 using GLMakie
-using ..Config
 
 export plot_slices, plot_field_directions, plot_graphs
 
 # ── Slice plot ────────────────────────────────────────────────────────────────
+
+# Positions of the data along x, y and z: cell centres for cell data, nodes for nodal data such
+# as V. x and y are centred, z runs from 0 at the top face.
+function data_coordinates(grid_params, dims)
+    axis(l, n, m) = m == n ? range(l / 2n, l - l / 2n, n) : range(0, l, n + 1)
+    return axis(grid_params.lx, grid_params.nx, dims[1]) .- grid_params.lx / 2,
+           axis(grid_params.ly, grid_params.ny, dims[2]) .- grid_params.ly / 2,
+           axis(grid_params.lz, grid_params.nz, dims[3])
+end
 
 # data may be an Observable, as in the live heat plot.
 function plot_slices(data, grid_params; title = "", colormap = :heat, colorrange = extrema(data),
@@ -17,12 +25,10 @@ function plot_slices(data, grid_params; title = "", colormap = :heat, colorrange
     maximum_length = max(grid_params.lx, grid_params.ly, grid_params.lz)
     scale!(ax.scene, maximum_length/grid_params.lx, maximum_length/grid_params.ly, maximum_length/grid_params.lz)
 
-    x = LinRange(-grid_params.lx/2, grid_params.lx/2, grid_params.nx)
-    y = LinRange(-grid_params.ly/2, grid_params.ly/2, grid_params.ny)
-    z = LinRange(grid_params.lz, 0, grid_params.nz)
+    x, y, z = data_coordinates(grid_params, size(to_value(data)))
 
     Colorbar(fig[1, 2]; colormap, limits = colorrange, ticks, label)
-    plt = volumeslices!(ax, x, y, z, data; colormap, colorrange)
+    plt = volumeslices!(ax, x, y, grid_params.lz .- z, data; colormap, colorrange)  # top face drawn on top
     slice_controls!(fig[2, 1], plt, length.((x, y, z)))
     return fig
 end
@@ -66,9 +72,7 @@ function plot_field_directions(E_vec, grid_params; arrow_density = 6, title = "E
         Label(fig[0, 1], title, fontsize=18, tellwidth=false)
     end
 
-    x = LinRange(-grid_params.lx/2, grid_params.lx/2, grid_params.nx)
-    y = LinRange(-grid_params.ly/2, grid_params.ly/2, grid_params.ny)
-    z = LinRange(0, grid_params.lz, grid_params.nz)
+    x, y, z = data_coordinates(grid_params, size(E_vec)[2:end])
 
     # aspect = (1,1,1) forces all three visual axes to the same length regardless
     # of data range, so a flat domain like Example 1 still looks cubic.
@@ -76,7 +80,7 @@ function plot_field_directions(E_vec, grid_params; arrow_density = 6, title = "E
     # The z limits are reversed to draw the "top" face (z = 0) on top, as in plot_slices.
     ax = Axis3(fig[1, 1], aspect = (1, 1, 1),
                xlabel = "x [m]", ylabel = "y [m]", zlabel = "z [m]")
-    limits!(ax, minimum(x), maximum(x), minimum(y), maximum(y), maximum(z), minimum(z))
+    limits!(ax, -grid_params.lx/2, grid_params.lx/2, -grid_params.ly/2, grid_params.ly/2, grid_params.lz, 0)
 
     # With aspect=(1,1,1) all axes are visually equal, so we use the same
     # number of arrow divisions along each axis regardless of physical size.
@@ -115,10 +119,7 @@ function plot_graphs(material_indices, grid_params, Qel, E_mag, E_vec, V, filena
                        ticks = sort(unique(material_indices)), title = "Media Distribution")
     fig2 = plot_slices(Qel, grid_params, title = "Distribution of Qel [W/m³]")
     fig3 = plot_slices(E_mag, grid_params, title = "Distribution of E [V/m]")
-    fig4 = plot_slices(V, Config.GridParams(
-                           grid_params.lx, grid_params.ly, grid_params.lz,
-                           grid_params.nx + 1, grid_params.ny + 1, grid_params.nz + 1),
-                       title = "Distribution of V [V]")
+    fig4 = plot_slices(V, grid_params, title = "Distribution of V [V]")
     fig5 = plot_field_directions(E_vec, grid_params; arrow_density, title = "E-field Direction")
 
     display(GLMakie.Screen(), fig1)
