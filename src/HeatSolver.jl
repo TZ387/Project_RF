@@ -25,10 +25,6 @@
 # Instead, parallelism is achieved by manually spawning one Task per z-slice
 # chunk using Threads.@spawn inside heat_step!, then waiting on all of them.  This is safe to call from any task or thread.
 #
-# Worker count is capped at physical CPU cores (Sys.CPU_THREADS ÷ 2).
-# Hyperthreads share the FPU and give no benefit for dense FP arithmetic.
-# The cap is also bounded by Threads.nthreads() — the Julia threadpool size.
-#
 # ── GPU ───────────────────────────────────────────────────────────────────────
 #
 # With CUDABackend() the arrays are moved to the GPU and heat_step! updates
@@ -43,30 +39,14 @@ export compute_stable_dt, solve_heat_phase
 
 # ── Backend abstraction ───────────────────────────────────────────────────────
 
-struct CPUBackend
-    n_workers :: Int
-end
-
+struct CPUBackend end
 struct CUDABackend end
 
-Base.show(io::IO, b::CPUBackend) = print(io, b.n_workers, " CPU workers")
+Base.show(io::IO, ::CPUBackend) = print(io, Threads.nthreads(), " CPU threads")
 Base.show(io::IO, ::CUDABackend) = print(io, "GPU")
 
 device_array(::CPUBackend, A) = A
 device_array(::CUDABackend, A) = CuArray(A)
-
-"""
-    cpu_backend() -> CPUBackend
-
-Choose worker count at runtime: min(julia_threads, physical_cores).
-Physical cores = Sys.CPU_THREADS ÷ 2 (excludes hyperthreads, which share
-the FPU and provide no benefit for dense floating-point work).
-"""
-function cpu_backend()
-    physical = max(1, Sys.CPU_THREADS ÷ 2)
-    workers  = min(Threads.nthreads(), physical)
-    return CPUBackend(workers)
-end
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -142,7 +122,7 @@ end
 
 # ── Parallel kernel (CPU) ─────────────────────────────────────────────────────
 #
-# We partition the nz z-slices into n_workers contiguous chunks and spawn one
+# We partition the nz z-slices into one contiguous chunk per Julia thread and spawn one
 # Task per chunk.  Threads.@spawn is safe to call from inside another spawned
 # task (unlike @threads).  No locks needed: each task writes to a disjoint
 # range of Tn[:,:,ls].
@@ -152,9 +132,9 @@ function heat_step!(Tn::Array{Float64,3},
                     Q::Array{Float64,3},
                     c::Array{Float64,3},
                     kx, ky, kz,
-                    backend::CPUBackend)
+                    ::CPUBackend)
     nz = size(T, 3)
-    @sync for ls in Iterators.partition(1:nz, cld(nz, backend.n_workers))
+    @sync for ls in Iterators.partition(1:nz, cld(nz, Threads.nthreads()))
         Threads.@spawn _step_slices!(Tn, T, Q, c, kx, ky, kz, ls)
     end
 end
@@ -166,13 +146,13 @@ heat_step!(Tn::CuArray, T, Q, c, kx, ky, kz, ::CUDABackend) =
 
 """
     solve_heat_phase(T_in, Q_source, heat_params, grid_params, t_phase;
-                     n_update=0, update_cb=nothing, backend=cpu_backend()) -> T
+                     n_update=0, update_cb=nothing, backend=CPUBackend()) -> T
 
 Advance the temperature field over `t_phase` seconds with source `Q_source`.
 
-`backend` selects the compute backend: `cpu_backend()` (the default), which
-reads Sys.CPU_THREADS at call time, or `CUDABackend()`. The returned field is
-always a CPU array; `update_cb` receives the field on the backend's device.
+`backend` selects the compute backend: `CPUBackend()` (the default), which uses
+all Julia threads, or `CUDABackend()`. The returned field is always a CPU array;
+`update_cb` receives the field on the backend's device.
 """
 function solve_heat_phase(T_in::Array{Float64,3},
                           Q_source::Array{Float64,3},
@@ -181,7 +161,7 @@ function solve_heat_phase(T_in::Array{Float64,3},
                           t_phase::Float64;
                           n_update::Int  = 0,
                           update_cb      = nothing,
-                          backend        = cpu_backend())
+                          backend        = CPUBackend())
 
     T  = device_array(backend, copy(T_in))
     Tn = similar(T)
@@ -224,7 +204,7 @@ end
 
 # Run every phase of the schedule in turn, with Qel as the source during :on
 # phases.  update_cb(T, t, label), if given, is called n_update times per phase.
-function solve_heat_schedule(Qel, heat_params, grid_params; update_cb = nothing, backend = cpu_backend())
+function solve_heat_schedule(Qel, heat_params, grid_params; update_cb = nothing, backend = CPUBackend())
     Qzero     = zero(Qel)
     T         = heat_params.T_initial
     t_elapsed = 0.0

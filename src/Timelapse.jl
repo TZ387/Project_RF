@@ -66,7 +66,7 @@ of plot snapshots produced by the worker.
 function run_heat_timelapse(Qel::Array{Float64,3},
                             heat_params::Config.HeatParams,
                             grid_params::Config.GridParams;
-                            backend = HeatSolver.cpu_backend())
+                            backend = HeatSolver.CPUBackend())
 
     nx, ny, nz = grid_params.nx, grid_params.ny, grid_params.nz
 
