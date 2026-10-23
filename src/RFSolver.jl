@@ -54,9 +54,10 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
 
     ch = ConstraintHandler(dh)
     for (boundary_name, condition) in boundary_conditions
-        # Facets where the condition returns nothing stay insulating
+        # Facets where the condition returns nothing stay insulating; Ferrite accepts f(x) as well as f(x, t)
+        f = hasmethod(condition, Tuple{Vec{3, Float64}, Float64}) ? condition : (x, _) -> condition(x)
         prescribed = filter(getfacetset(grid, boundary_name)) do (cell, facet)
-            all(n -> condition(get_node_coordinate(grid, n), 0.0) !== nothing, Ferrite.facets(getcells(grid, cell))[facet])
+            all(n -> f(get_node_coordinate(grid, n), 0.0) !== nothing, Ferrite.facets(getcells(grid, cell))[facet])
         end
         add!(ch, Dirichlet(:V_dof, prescribed, condition))
     end
