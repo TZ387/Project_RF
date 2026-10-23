@@ -75,7 +75,7 @@ The matrix-vector product of the RF solver is parallelised over alternating z-la
 
 ## 2. Usage
 
-The scripts in `Examples/` are complete set-ups meant to be copied and changed; `Example1.jl` runs the whole workflow.
+The scripts in `Examples/` are complete set-ups meant to be copied and changed; `Example1.jl` runs the whole workflow, and `Example6_Franco.jl` uses the electrode potential of [5].
 
 The workflow consists of two steps that can be run independently.
 
@@ -164,3 +164,5 @@ You can confirm the thread count inside Julia with `Threads.nthreads()`.
 [3] D. Andreuccetti, R. Fossi and C. Petrucci, "An Internet resource for the calculation of the dielectric properties of body tissues in the frequency range 10 Hz – 100 GHz", IFAC-CNR, Florence (1997). Based on data published by C. Gabriel et al. in 1996. <http://niremf.ifac.cnr.it/tissprop/>
 
 [4] M. Milanic, B. Tasic Muc, N. Lukac and M. Lukac, "Numerical Study of Hyper‐Thermic Laser Lipolysis With 1,064 nm Nd:YAG Laser in Human Subjects", *Lasers Surg. Med.* 51(10), 897–909 (2019). [doi:10.1002/lsm.23124](https://doi.org/10.1002/lsm.23124)
+
+[5] W. Franco, A. Kothare, S. J. Ronan, R. C. Grekin and T. H. McCalmont, "Hyperthermic Injury to Adipocyte Cells by Selective Heating of Subcutaneous Fat With a Novel Radiofrequency Device: Feasibility Studies", *Lasers Surg. Med.* 42, 361–370 (2010). [doi:10.1002/lsm.20925](https://doi.org/10.1002/lsm.20925)
