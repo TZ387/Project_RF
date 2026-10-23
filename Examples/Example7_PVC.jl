@@ -31,6 +31,8 @@ function define_material_properties()
 end
 
 function main()
+    # Flags for use
+    use_gpu = false            # Solve on an NVIDIA GPU (needs CUDA)
 
     # Define grid parameters
     grid_params = GridParams(
@@ -81,7 +83,7 @@ function main()
 
     # Run the simulation
     grid, V_dof, Qel, E_mag, E_vec, V = run_simulation(
-        grid_params, rf_params, boundary_conditions);
+        grid_params, rf_params, boundary_conditions; use_gpu = use_gpu);
     plot_graphs(material_indices, grid_params, Qel, E_mag, E_vec, V)
 
     

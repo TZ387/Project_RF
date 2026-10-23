@@ -12,7 +12,7 @@ function run_example(file)
     Core.eval(m, :(using prrf))
     Core.eval(m, quote
         const recorded = Dict{Symbol, Any}()
-        run_simulation(gp, rf, bc) = (recorded[:rf] = (; gp, rf, bc); (nothing, nothing, zero(rf.sigma), nothing, nothing, nothing))
+        run_simulation(gp, rf, bc; kwargs...) = (recorded[:rf] = (; gp, rf, bc); (nothing, nothing, zero(rf.sigma), nothing, nothing, nothing))
         run_heat_simulation(Qel, gp, hp; kwargs...) = (recorded[:heat] = hp; nothing)
         plot_graphs(args...) = nothing
         plot_slices(args...; kwargs...) = nothing

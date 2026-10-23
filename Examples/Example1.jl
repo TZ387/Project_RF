@@ -33,6 +33,7 @@ end
 function main()
     # Flags for use
     create_timelapse = true    # Show live-updating heat plot during simulation
+    use_gpu = false            # Solve on an NVIDIA GPU (needs CUDA)
 
     # Define grid parameters
     grid_params = GridParams(
@@ -85,7 +86,7 @@ function main()
 
     # Run the simulation
     grid, V_dof, Qel, E_mag, E_vec, V = run_simulation(
-        grid_params, rf_params, boundary_conditions);
+        grid_params, rf_params, boundary_conditions; use_gpu = use_gpu);
 
     # Save RF results
     save_simulation("Example1.h5", grid_params, material_indices;
@@ -93,7 +94,7 @@ function main()
 
     plot_graphs(material_indices, grid_params, Qel, E_mag, E_vec, V)
 
-    T_final = run_heat_simulation(Qel, grid_params, heat_params; create_timelapse = create_timelapse)
+    T_final = run_heat_simulation(Qel, grid_params, heat_params; create_timelapse = create_timelapse, use_gpu = use_gpu)
 
     return grid, V_dof, Qel, E_mag, E_vec, V, T_final
 end

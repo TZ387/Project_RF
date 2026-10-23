@@ -84,7 +84,7 @@ With `use_gpu = true` (see Usage) the heat update and the conjugate gradient ite
 
 ## 2. Usage
 
-The scripts in `Examples/` are complete set-ups meant to be copied and changed; `Example1.jl` runs the whole workflow, and `Example6_Franco.jl` uses the electrode potential of [5].
+The scripts in `Examples/` are complete set-ups meant to be copied and changed; `Example1.jl` runs the whole workflow, and `Example6_Franco.jl` uses the electrode potential of [5]. Each example has a `use_gpu` flag at the start of `main` (Section 1.3).
 
 The workflow consists of two steps that can be run independently.
 
