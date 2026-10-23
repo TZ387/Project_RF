@@ -8,7 +8,7 @@ export RFParams, HeatParams, GridParams, setup_material_properties, create_coord
 # Parameters for RF problem
 struct RFParams
     sigma::Array{Float64, 3}  # Electrical conductivity matrix [S/m]
-    epsilon_im::Array{Float64, 3}  # Permittivity matrix [F/m]
+    epsilon_im::Array{Float64, 3}  # Imaginary part of the permittivity ε'' [F/m]
     ω::Float64  # Angular frequency of the RF signal [rad/s], ω = 2πf
 end
 

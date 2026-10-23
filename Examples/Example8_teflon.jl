@@ -54,7 +54,7 @@ function main()
     # Load RF parameters
     rf_params = RFParams(
         sigma,   # Electrical conductivity matrix [S/m]
-        epsilon_im, # Permittivity matrix [F/m]
+        epsilon_im, # Imaginary part of the permittivity ε'' [F/m]
         1e6,     # ω = Angular frequency of the RF signal [rad/s]
     )
 
