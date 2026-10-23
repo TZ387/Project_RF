@@ -1,34 +1,11 @@
 # HeatSolver.jl
 #
-# Solves the classic (non-perfused) heat equation on the structured voxel grid:
+# Explicit finite-difference solver for VHC · ∂T/∂t = ∇·(k∇T) + Q with insulated boundaries
+# (README, Section 1.2).
 #
-#   VHC(x) · ∂T/∂t = ∇·(k(x) ∇T) + Q(x)
-#
-# Spatial discretisation: cell-centred finite differences on the uniform
-# Cartesian grid that GridSetup produces.
-#
-# Time integration: explicit forward Euler, with Δt chosen automatically to
-# satisfy the stability criterion:
-#
-#   Δt ≤ min_over_cells( VHC / Σ_faces(k_face / Δ²) )
-#
-# where k_face is the harmonic mean of the two cells sharing the face.
-# A safety factor of 0.9 is applied.
-#
-# Boundary conditions: zero-flux (Neumann) on all six faces.
-#
-# ── CPU parallelisation ───────────────────────────────────────────────────────
-#
-# The solver is called from inside a Threads.@spawn task in Timelapse.
-# Threads.@threads is NOT safe when nested inside @spawn — it deadlocks.
-#
-# Instead, parallelism is achieved by manually spawning one Task per z-slice
-# chunk using Threads.@spawn inside heat_step!, then waiting on all of them.  This is safe to call from any task or thread.
-#
-# ── GPU ───────────────────────────────────────────────────────────────────────
-#
-# With CUDABackend() the arrays are moved to the GPU and heat_step! updates
-# every cell in its own GPU thread.
+# During the live plot the solver runs inside a Threads.@spawn task, where Threads.@threads
+# deadlocks, so heat_step! spawns one task per chunk of z-slices instead. With CUDABackend()
+# the arrays move to the GPU and every cell is updated in its own GPU thread.
 
 module HeatSolver
 
@@ -121,11 +98,7 @@ function compute_stable_dt(VHC, kx, ky, kz; safety::Float64 = 0.9)
 end
 
 # ── Parallel kernel (CPU) ─────────────────────────────────────────────────────
-#
-# We partition the nz z-slices into one contiguous chunk per Julia thread and spawn one
-# Task per chunk.  Threads.@spawn is safe to call from inside another spawned
-# task (unlike @threads).  No locks needed: each task writes to a disjoint
-# range of Tn[:,:,ls].
+# One task per chunk of z-slices; each writes its own slices of Tn, so no locks are needed.
 
 function heat_step!(Tn::Array{Float64,3},
                     T::Array{Float64,3},

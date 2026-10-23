@@ -26,7 +26,7 @@ The codebase is meant to stay lean. Prefer the solution with the least code, as 
 
 - **New features.** Add only the code the feature needs. No boilerplate, and no options or abstractions for cases that do not exist yet.
 - **Existing code.** If you see something that can be written more efficiently and with less code, take the opportunity. Make it its own commit, separate from the task you were given. The repetition between example scripts is the exception (see below).
-- **Comments.** Keep them few and short. Comment only what the code does not make obvious; no long explanatory blocks, and no comments that restate the code. Some existing files have long header comments. Do not take them as the model for new code.
+- **Comments.** Keep them few and short. Comment only what the code does not make obvious; no long explanatory blocks, and no comments that restate the code.
 
 ## Examples are deliberately simple
 

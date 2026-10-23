@@ -32,8 +32,7 @@ struct HeatParams
     T_plot_max :: Union{Float64, Nothing}
 end
 
-# Convenience constructor — T_plot_min/T_plot_max default to nothing so all
-# existing call sites that pass only the original five arguments still work.
+# T_plot_min and T_plot_max are optional keywords
 function HeatParams(schedule, n_update, T_initial, VHC, k;
                     T_plot_min::Union{Float64,Nothing} = nothing,
                     T_plot_max::Union{Float64,Nothing} = nothing)

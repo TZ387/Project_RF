@@ -62,9 +62,7 @@ end
 # subsampled 3D grid. Arrow length is constant — magnitude information is shown
 # separately in the E_mag slice plot.
 #
-# arrow_density controls how many arrows appear along the longest physical axis.
-# Each axis gets its own stride derived from a shared target physical spacing,
-# so arrow density is visually uniform even on highly anisotropic grids.
+# arrow_density is the number of arrows along each axis.
 function plot_field_directions(E_vec, grid_params; arrow_density = 6, title = "E-field Direction")
     fig = Figure(size = (700, 700))
 

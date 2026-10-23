@@ -1,35 +1,9 @@
 # Timelapse.jl
 #
-# Live-updating heat simulation visualisation using GLMakie observables.
-#
-# The simulation follows the arbitrary schedule defined in HeatParams.schedule —
-# an ordered list of (:on/:off, duration) phases, e.g.:
-#
-#   [(:on, 30.0), (:off, 60.0), (:on, 15.0)]
-#
-# Threading model
-# ───────────────
-# The root cause of VS Code's "not responding" freeze is that the heavy solver
-# loop and the GLMakie window event loop both run on the same (main) thread.
-# The OS sees the thread busy for seconds at a time and marks the window
-# unresponsive.
-#
-# Fix: the entire heat simulation runs on a worker thread (Threads.@spawn).
-# The main thread never blocks on the solver — it sits in a lightweight
-# polling loop that (a) drains incoming plot snapshots from a Channel and
-# writes them to Observables, and (b) calls sleep(0.05) between polls to
-# yield back to the GLMakie event loop.
-#
-# Why a Channel and not direct Observable writes from the worker?
-# GLMakie requires all Observable assignments to happen on the main thread.
-# Writing obs[] = ... from a worker thread causes race conditions and
-# occasional crashes.  The Channel decouples the two threads cleanly:
-# the worker puts a cheap snapshot struct into it; the main thread takes
-# snapshots out and does all Observable writes itself.
-#
-# Layout:
-#   worker thread → solve_heat_phase × N → put!(channel, snapshot)
-#   main thread   → polling loop { take! + obs[] = ..., sleep(0.05) }
+# Live plot of the heat simulation. The solver runs on a worker thread (Threads.@spawn) so the
+# GLMakie window stays responsive. Observables may only be written from the main thread, so the
+# worker sends snapshots through a Channel, and the main thread polls it every 50 ms and
+# updates the plot.
 
 module Timelapse
 

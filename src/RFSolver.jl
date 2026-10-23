@@ -52,20 +52,8 @@ function add_cells_kernel!(y, v, cell_dofs, conductivities, Ke_ref)
     return
 end
 
-# Solve the RF Laplace problem
-#   div[(sigma + omega*epsilon_im) * grad(V)] = 0
-# using matrix-free preconditioned CG.
-#
-# K is NEVER assembled or stored — memory is O(n).
-#
-# Speed: on a uniform structured hex grid (from generate_grid) every element
-# has identical geometry, so  Ke(cell) = conductivity(cell) * Ke_ref.
-# Ke_ref is computed once from the first element (512 bytes).
-# Each matvec is then: for each cell, y_local += c * Ke_ref * v_local —
-# an 8x8 dense matvec scaled by a scalar, with no quadrature at runtime.
-# This is 8x fewer FLOPs per iteration than recomputing quadrature each time,
-# and lower memory bandwidth than a sparse matvec on an explicit K.
-#
+# Solves ∇·[(σ + ωε'')∇V] = 0 with Jacobi-preconditioned CG. K is never assembled: on the
+# uniform grid each cell's stiffness matrix is its conductivity times one reference matrix.
 # With use_gpu = true the CG iterations run on the GPU; set-up and result stay on the CPU.
 function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridParams, boundary_conditions;
                   use_gpu::Bool = false)
@@ -96,12 +84,7 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
     ny_max      = grid_params.ny
     n_cells     = nx_max * ny_max * grid_params.nz
 
-    # ── Precompute Ke_ref ────────────────────────────────────────────────────
-    # All elements share the same geometry (uniform hex mesh), so the
-    # geometric part of the stiffness matrix is identical across elements.
-    # We compute it once from the first element with unit conductivity.
-    # Stored as SMatrix so the 8x8 mul! in the matvec is fully unrolled
-    # and SIMD-vectorized by the compiler — no BLAS overhead for tiny matrices.
+    # ── Ke_ref: stiffness matrix of a cell with unit conductivity ───────────
     Ke_ref_mut = zeros(n_basefuncs, n_basefuncs)
     let fc = first(CellIterator(dh))
         reinit!(cellvalues, fc)
@@ -116,7 +99,7 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
             end
         end
     end
-    Ke_ref = SMatrix{8,8}(Ke_ref_mut)  # immutable static matrix
+    Ke_ref = SMatrix{8,8}(Ke_ref_mut)
 
     # ── Cache conductivities and DOF indices per cell ────────────────────────
     # Cells are numbered x fastest, like the (nx, ny, nz) material arrays.
