@@ -101,7 +101,7 @@ function _load_group(group)
         sym = Symbol(key)
         if obj isa HDF5.Group
             # Check for the complex marker attribute set during saving
-            if haskey(attrs(obj), "complex") && read(attrs(obj)["complex"]) == 1
+            if haskey(attrs(obj), "complex") && attrs(obj)["complex"] == 1
                 re  = read(obj["real"])
                 im_ = read(obj["imag"])
                 push!(pairs_vec, sym => complex.(re, im_))
