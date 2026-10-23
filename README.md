@@ -27,7 +27,7 @@ Considering $\epsilon = \epsilon' + i\epsilon''$ and neglecting the displacement
 
 $$\nabla \cdot [(\sigma + \omega\epsilon'')\nabla V]=0$$
 
-Reference [2] examines the error of both steps: the quasi-static approximation holds up to the MHz range, and neglecting $\epsilon'$ is the larger source of error.
+Reference [2] examines the error of both steps: the quasi-static approximation holds up to the MHz range, and neglecting $\epsilon'$ is the larger source of error. Neglecting $\omega\epsilon'$ is not valid for insulators, such as a dielectric layer between electrode and skin (`Example7_PVC.jl`, `Example8_teflon.jl`): their displacement current is comparable to or larger than the conduction current, and the model treats such a layer as a resistor rather than a capacitor.
 
 Here, $\sigma$ [S/m] is electrical conductivity, $\omega = 2\pi f$ [rad/s] is the angular frequency, $V$ [V] is the electric potential, and $\epsilon$ [F/m] is the electrical permittivity of the material.
 
@@ -40,6 +40,8 @@ Tissue conductivities at a given frequency can be looked up in [3].
 Once $V$ is known, the electric field is $\mathbf{E} = -\nabla V$ [V/m], and the power density (volumetric heat source) deposited in the tissue by conduction and dielectric losses is:
 
 $$Q_{el} = \frac{1}{2} (\sigma + \omega\epsilon'') |\mathbf{E}|^2 \quad \text{[W/m}^3\text{]}$$
+
+$V$ and $\mathbf{E}$ are amplitudes (peak values); with RMS values the factor $\frac{1}{2}$ drops out.
 
 The potential is computed with linear finite elements on a uniform hexahedral grid, using a matrix-free conjugate gradient solver.
 
