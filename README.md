@@ -26,7 +26,7 @@ Pkg.test()
 
 The RF heating procedure uses two or more electrodes to apply alternating electrical current to tissue — one electrode applies an alternating electrical potential, while the other acts as an electrical ground.
 
-At typical RF heating frequencies in the range of $10^6$ s$^{-1}$ the field in the tissue can be treated as quasi-static [1], and the governing equation for the electric potential is:
+At typical RF heating frequencies of around 1 MHz the field in the tissue can be treated as quasi-static [1], and the governing equation for the electric potential is:
 
 $$\nabla \cdot [(\sigma - i\omega\epsilon)\nabla V]=0$$
 
