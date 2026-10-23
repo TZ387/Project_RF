@@ -43,13 +43,11 @@ export compute_stable_dt, solve_heat_phase
 
 # ── Backend abstraction ───────────────────────────────────────────────────────
 
-abstract type AbstractHeatBackend end
-
-struct CPUBackend <: AbstractHeatBackend
+struct CPUBackend
     n_workers :: Int
 end
 
-struct CUDABackend <: AbstractHeatBackend end
+struct CUDABackend end
 
 Base.show(io::IO, b::CPUBackend) = print(io, b.n_workers, " CPU workers")
 Base.show(io::IO, ::CUDABackend) = print(io, "GPU")

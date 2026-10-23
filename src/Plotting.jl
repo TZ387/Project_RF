@@ -7,11 +7,8 @@ export plot_slices, plot_field_directions, plot_graphs
 
 # ── Slice plot ────────────────────────────────────────────────────────────────
 
-function plot_slices(V, grid_params; fig = nothing, num_ticks = 5,
-                     use_log_scale = false, title = "")
-    if fig === nothing
-        fig = Figure(size = (700, 700))
-    end
+function plot_slices(V, grid_params; num_ticks = 5, title = "")
+    fig = Figure(size = (700, 700))
 
     ax = LScene(fig[1, 1], show_axis=false)
     maximum_length = max(grid_params.lx, grid_params.ly, grid_params.lz)
@@ -25,14 +22,13 @@ function plot_slices(V, grid_params; fig = nothing, num_ticks = 5,
     y = LinRange(-grid_params.ly/2, grid_params.ly/2, grid_params.ny)
     z = LinRange(grid_params.lz, 0, grid_params.nz)
 
-    V_plot     = use_log_scale ? log10.(V) : V
-    cmin, cmax = extrema(V_plot)
+    cmin, cmax = extrema(V)
     ticks      = range(cmin, cmax, length=num_ticks)
 
     colormap = :heat
     Colorbar(fig[1, 2], limits = (cmin, cmax), colormap = colormap, ticks=ticks)
 
-    plt = volumeslices!(ax, x, y, z, V_plot, colormap=colormap, colorrange=(cmin, cmax))
+    plt = volumeslices!(ax, x, y, z, V, colormap=colormap, colorrange=(cmin, cmax))
     slice_controls!(fig[2, 1], plt, length.((x, y, z)))
 
     fig

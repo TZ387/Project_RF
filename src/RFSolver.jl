@@ -23,8 +23,6 @@ struct JacobiPrecond{V <: AbstractVector}
     d_inv::V
 end
 LinearAlgebra.ldiv!(y::AbstractVector, P::JacobiPrecond, x::AbstractVector) = (y .= x .* P.d_inv)
-LinearAlgebra.ldiv!(P::JacobiPrecond, x::AbstractVector) = (x .*= P.d_inv)
-Base.:\(P::JacobiPrecond, x::AbstractVector) = x .* P.d_inv
 
 # Contribution c * Ke_ref * v_local of cell cn and the cell's DOFs, as stack-allocated
 # static vectors. Shared by the CPU and GPU matvec.
