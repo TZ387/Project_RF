@@ -22,7 +22,7 @@ function define_material_properties()
     materials = Dict{Int, NamedTuple}()
     
     epsilon_0 = 8.854e-12  # Permittivity of free space [F/m]
-    materials[1] = (name = "Teflon", sigma = 0.000078, epsilon_im = 0*epsilon_0, VHC = 1.0e6, k = 0.025)
+    materials[1] = (name = "PVC", sigma = 0.000078, epsilon_im = 0*epsilon_0, VHC = 1.0e6, k = 0.025)
     materials[2] = (name = "Skin", sigma = 0.22, epsilon_im = 0*epsilon_0, VHC = 4.18e6, k = 0.6)
     materials[3] = (name = "Fat", sigma = 0.025, epsilon_im = 0*epsilon_0, VHC = 1.0e6, k = 0.5)
     materials[4] = (name = "Muscle", sigma = 0.5, epsilon_im = 0*epsilon_0, VHC = 1.0e6, k = 0.5)
