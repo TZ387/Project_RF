@@ -5,7 +5,7 @@ using prrf
 function geometryDefinition(grid_params::GridParams)
     # Get coordinate grids from Config module (implementation details hidden)
     X, Y, Z = create_coordinate_grids(grid_params)
-    # Initialize with default material (air/gel)
+    # Initialize every cell with material 1
     M = ones(Int, grid_params.nx, grid_params.ny, grid_params.nz)
     
     # Apply conditions using absolute coordinates [m]
@@ -60,16 +60,16 @@ function main()
 
 
     # Define boundary conditions as Gaussian functions
-    A = 10.0   # Amplitude of the Gaussian (e.g., 10 V_dof)
-    mu = 0.005  # Mean (center of the domain in x-direction)
+    A = 10.0   # Amplitude of the Gaussian (e.g., 10 V)
+    mu = 0.005  # x-coordinate of the Gaussian's centre [m]
     sigma2 = 0.03  # Standard deviation (controls the width of the Gaussian)
 
     boundary_conditions = Dict(
-        "bottom" => (x, t) -> 0.0,  # Gaussian in x and y
-        #"left" => (x, t) -> 0.0,  # Gaussian in x and y
-        #"right" => (x, t) -> 0.0,  # Gaussian in x and y
-        #"front" => (x, t) -> 0.0,  # Gaussian in x and y
-        #"back" => (x, t) -> 0.0,  # Gaussian in x and y
+        "bottom" => (x, t) -> 0.0,
+        #"left" => (x, t) -> 0.0,
+        #"right" => (x, t) -> 0.0,
+        #"front" => (x, t) -> 0.0,
+        #"back" => (x, t) -> 0.0,
         "top" => (x, t) -> A * exp(-((x[1] - mu)^2 + (x[2] - 0.001)^2) / (2 * sigma2^2))
     )
 

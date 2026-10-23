@@ -6,7 +6,7 @@ using prrf
 function geometryDefinition(grid_params::GridParams)
     # Get coordinate grids from Config module (implementation details hidden)
     X, Y, Z = create_coordinate_grids(grid_params)
-    # Initialize with default material (air/gel)
+    # Initialize every cell with material 1
     M = ones(Int, grid_params.nx, grid_params.ny, grid_params.nz)
     
     # Apply conditions using absolute coordinates [m]

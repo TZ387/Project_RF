@@ -5,7 +5,7 @@ using prrf
 function geometryDefinition(grid_params::GridParams)
     # Get coordinate grids from Config module (implementation details hidden)
     X, Y, Z = create_coordinate_grids(grid_params)
-    # Initialize with default material (air/gel)
+    # Initialize every cell with material 1
     M = ones(Int, grid_params.nx, grid_params.ny, grid_params.nz)
     
     # Apply conditions using absolute coordinates [m]
@@ -80,7 +80,7 @@ function main()
     grid, V_dof, Qel, E_mag, E_vec, V = run_simulation(
         grid_params, rf_params, boundary_conditions; use_gpu = use_gpu);
 
-    # Save all relevant fields — V_dof and E are now included alongside the rest
+    # Save RF results
     save_simulation("Example6_Franco.h5", grid_params, material_indices;
         Qel   = Qel,
         E_mag = E_mag,

@@ -6,7 +6,7 @@ using GLMakie
 function geometryDefinition(grid_params::GridParams)
     # Get coordinate grids from Config module (implementation details hidden)
     X, Y, Z = create_coordinate_grids(grid_params)
-    # Initialize with default material (air/gel)
+    # Initialize every cell with material 1
     M = ones(Int, grid_params.nx, grid_params.ny, grid_params.nz)
     
     # Apply conditions using absolute coordinates [m]
@@ -66,11 +66,11 @@ function main()
     V0 = 500.0       # Constant potential of the circular electrode
 
     boundary_conditions = Dict(
-        "bottom" => (x, t) -> 0.0,  # Gaussian in x and y
-        #"left" => (x, t) -> 0.0,  # Gaussian in x and y
-        #"right" => (x, t) -> 0.0,  # Gaussian in x and y
-        #"front" => (x, t) -> 0.0,  # Gaussian in x and y
-        #"back" => (x, t) -> 0.0,  # Gaussian in x and y
+        "bottom" => (x, t) -> 0.0,
+        #"left" => (x, t) -> 0.0,
+        #"right" => (x, t) -> 0.0,
+        #"front" => (x, t) -> 0.0,
+        #"back" => (x, t) -> 0.0,
         "top" => (x, t) -> begin
         r = sqrt((x[1] - x_center)^2 + (x[2] - y_center)^2)
         if r <= radius
