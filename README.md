@@ -4,7 +4,7 @@ A program for RF heating simulation in biological tissue. Given an arbitrary ele
 
 ## Requirements
 
-- [Julia](https://julialang.org/) ≥ 1.10
+- [Julia](https://julialang.org/) ≥ 1.12
 - Optional: an NVIDIA GPU with a current driver, for `use_gpu = true`
 - Dependencies are listed in `Project.toml` and managed by Julia's built-in package manager. To install them, open a Julia REPL in the project directory and run:
 
@@ -14,7 +14,7 @@ Pkg.activate(".")
 Pkg.instantiate()
 ```
 
-To run the tests (Julia ≥ 1.12):
+To run the tests:
 
 ```julia
 Pkg.test()
