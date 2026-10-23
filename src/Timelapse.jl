@@ -37,7 +37,7 @@ using GLMakie
 using Printf
 using ..Config
 using ..HeatSolver
-using ..Plotting: slice_controls!
+using ..Plotting: plot_slices
 
 export run_heat_timelapse
 
@@ -68,12 +68,6 @@ function run_heat_timelapse(Qel::Array{Float64,3},
                             grid_params::Config.GridParams;
                             backend = HeatSolver.CPUBackend())
 
-    nx, ny, nz = grid_params.nx, grid_params.ny, grid_params.nz
-
-    x = LinRange(-grid_params.lx/2, grid_params.lx/2, nx)
-    y = LinRange(-grid_params.ly/2, grid_params.ly/2, ny)
-    z = LinRange(grid_params.lz, 0, nz)
-
     # ── Channel ───────────────────────────────────────────────────────────────
     # Capacity 4: small buffer so the worker is never held up long waiting for
     # the main thread to drain, but also doesn't queue stale frames.
@@ -94,31 +88,8 @@ function run_heat_timelapse(Qel::Array{Float64,3},
     crange_obs = Observable((init_cmin, init_cmax))
     title_obs  = Observable("t = 0.00 s")
 
-    colormap = :thermal
-
-    fig = Figure(size = (800, 750))
-
-    Label(fig[0, 1], title_obs, fontsize = 18, tellwidth = false)
-
-    ax = LScene(fig[1, 1], show_axis = false)
-    maximum_length = max(grid_params.lx, grid_params.ly, grid_params.lz)
-    scale!(ax.scene,
-           maximum_length / grid_params.lx,
-           maximum_length / grid_params.ly,
-           maximum_length / grid_params.lz)
-
-    plt = volumeslices!(ax, x, y, z, vol_obs;
-                        colormap   = colormap,
-                        colorrange = crange_obs)
-
-    Colorbar(fig[1, 2];
-             colormap = colormap,
-             limits   = crange_obs,
-             label    = "Temperature [°C]")
-
-    sl_yz, sl_xz, sl_xy = slice_controls!(fig[2, 1], plt, (nx, ny, nz))
-
-    display(fig)
+    display(plot_slices(vol_obs, grid_params; title = title_obs, colormap = :thermal,
+                        colorrange = crange_obs, ticks = GLMakie.Makie.automatic, label = "Temperature [°C]"))
 
     # ── Worker thread ─────────────────────────────────────────────────────────
     sim_task = Threads.@spawn begin
@@ -152,13 +123,6 @@ function run_heat_timelapse(Qel::Array{Float64,3},
                 crange_obs[] = (snap.T_min, snap.T_max)
             end
             title_obs[] = @sprintf("t = %.2f s  [%s]", snap.t_sim, snap.label)
-            # volumeslices! doesn't re-extract slices automatically when the
-            # volume observable changes — manually re-trigger each plane at
-            # the current slider position so the display updates without the
-            # user having to touch a slider.
-            plt[:update_yz][](sl_yz.value[])
-            plt[:update_xz][](sl_xz.value[])
-            plt[:update_xy][](sl_xy.value[])
         end
         sleep(0.05)
     end

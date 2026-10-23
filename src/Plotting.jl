@@ -7,31 +7,24 @@ export plot_slices, plot_field_directions, plot_graphs
 
 # ── Slice plot ────────────────────────────────────────────────────────────────
 
-function plot_slices(V, grid_params; num_ticks = 5, title = "")
+# data may be an Observable, as in the live heat plot.
+function plot_slices(data, grid_params; title = "", colormap = :heat, colorrange = extrema(data),
+                     ticks = range(colorrange..., length = 5), label = "")
     fig = Figure(size = (700, 700))
+    Label(fig[0, 1], title, fontsize = 18, tellwidth = false)
 
     ax = LScene(fig[1, 1], show_axis=false)
     maximum_length = max(grid_params.lx, grid_params.ly, grid_params.lz)
     scale!(ax.scene, maximum_length/grid_params.lx, maximum_length/grid_params.ly, maximum_length/grid_params.lz)
 
-    if !isempty(title)
-        Label(fig[0, 1], title, fontsize=18, tellwidth=false)
-    end
-
     x = LinRange(-grid_params.lx/2, grid_params.lx/2, grid_params.nx)
     y = LinRange(-grid_params.ly/2, grid_params.ly/2, grid_params.ny)
     z = LinRange(grid_params.lz, 0, grid_params.nz)
 
-    cmin, cmax = extrema(V)
-    ticks      = range(cmin, cmax, length=num_ticks)
-
-    colormap = :heat
-    Colorbar(fig[1, 2], limits = (cmin, cmax), colormap = colormap, ticks=ticks)
-
-    plt = volumeslices!(ax, x, y, z, V, colormap=colormap, colorrange=(cmin, cmax))
+    Colorbar(fig[1, 2]; colormap, limits = colorrange, ticks, label)
+    plt = volumeslices!(ax, x, y, z, data; colormap, colorrange)
     slice_controls!(fig[2, 1], plt, length.((x, y, z)))
-
-    fig
+    return fig
 end
 
 # Adds a slider with arrow buttons, a value label and a visibility toggle for each
@@ -119,7 +112,7 @@ end
 
 function plot_graphs(material_indices, grid_params, Qel, E_mag, E_vec, V, filename=nothing, arrow_density = 6)
     fig1 = plot_slices(material_indices, grid_params,
-                       num_ticks = maximum(material_indices), title = "Media Distribution")
+                       ticks = sort(unique(material_indices)), title = "Media Distribution")
     fig2 = plot_slices(Qel, grid_params, title = "Distribution of Qel [W/m³]")
     fig3 = plot_slices(E_mag, grid_params, title = "Distribution of E [V/m]")
     fig4 = plot_slices(V, Config.GridParams(
