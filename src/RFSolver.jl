@@ -209,9 +209,16 @@ function calculate_fields(V, rf_params::Config.RFParams, grid_params)
     return Q_el, E_mag, permutedims(cat(Ex, Ey, Ez; dims = 4), (4, 1, 2, 3))
 end
 
-# DOFs are not numbered in node order, so map them onto the grid nodes first.
+# DOFs are not numbered in node order, so copy each cell's DOF values to its nodes.
 function convert_V(V_dof, dh, grid_params)
-    V = evaluate_at_grid_nodes(dh, V_dof, :V_dof)
+    grid, dofs = Ferrite.get_grid(dh), zeros(Int, 8)
+    V = similar(V_dof, getnnodes(grid))
+    for cn in 1:getncells(grid)
+        celldofs!(dofs, dh, cn)
+        for (i, node) in enumerate(getcells(grid, cn).nodes)
+            V[node] = V_dof[dofs[i]]
+        end
+    end
     return reshape(V, grid_params.nx + 1, grid_params.ny + 1, grid_params.nz + 1)
 end
 
