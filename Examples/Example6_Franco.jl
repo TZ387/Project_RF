@@ -69,7 +69,7 @@ function main()
             if abs(x[2]) <= L && abs(x[1]) <= L
                 return (a * (l * x[2] / L)^2 + b) * sqrt(P * I)
             else
-                return 0.0
+                return nothing  # Insulating skin outside the applicator, as in [5]
             end
         end
     )
