@@ -3,18 +3,10 @@ module RFSolver
 using CUDA
 using Ferrite
 using LinearAlgebra
-using IterativeSolvers
-using LinearMaps
 using StaticArrays
 using ..Config
 
 export solve_rf, calculate_fields, convert_V
-
-# Jacobi (diagonal) preconditioner — stores 1/d[i] directly.
-struct JacobiPrecond{V <: AbstractVector}
-    d_inv::V
-end
-LinearAlgebra.ldiv!(y::AbstractVector, P::JacobiPrecond, x::AbstractVector) = (y .= x .* P.d_inv)
 
 # Contribution c * Ke_ref * v_local of cell cn and the cell's DOFs, as stack-allocated
 # static vectors. Shared by the CPU and GPU matvec.
@@ -50,6 +42,62 @@ function add_cells_kernel!(y, v, cell_dofs, conductivities, Ke_ref)
         end
     end
     return
+end
+
+# ── Jacobi-preconditioned CG ──────────────────────────────────────────────────
+# Stops when ‖r‖ ≤ reltol·‖r₀‖, as IterativeSolvers.cg! did. The vector work takes three passes
+# per iteration: threaded loops on the CPU, broadcasts on the GPU.
+
+# Runs f on one chunk of 1:n per thread and returns the chunk results
+on_chunks(f, n) = fetch.([Threads.@spawn f(c) for c in Iterators.partition(1:n, cld(n, Threads.nthreads()))])
+
+# u = d_inv .* r .+ β .* u
+function cg_direction!(u, r, d_inv, β)
+    on_chunks(length(u)) do chunk
+        @inbounds for i in chunk
+            u[i] = d_inv[i] * r[i] + β * u[i]
+        end
+    end
+end
+cg_direction!(u::CuArray, r, d_inv, β) = (u .= d_inv .* r .+ β .* u)
+
+# x += α u and r -= α c; returns r·r and r·(d_inv .* r)
+function cg_step!(x, r, u, c, d_inv, α)
+    sums = on_chunks(length(x)) do chunk
+        rr = rz = 0.0
+        @inbounds for i in chunk
+            x[i] += α * u[i]
+            r[i] -= α * c[i]
+            rr += r[i]^2
+            rz += d_inv[i] * r[i]^2
+        end
+        rr, rz
+    end
+    return sum(first, sums), sum(last, sums)
+end
+function cg_step!(x::CuArray, r, u, c, d_inv, α)
+    x .+= α .* u
+    r .-= α .* c
+    return dot(r, r), mapreduce((ri, di) -> di * ri^2, +, r, d_inv)
+end
+
+# Solves A x = b from the given x, with A applied by matvec!(y, v) and d_inv = 1 ./ diag(A).
+# Returns the number of iterations, the final ‖r‖ and whether it converged.
+function pcg!(x, matvec!, b, d_inv; reltol, maxiter)
+    c = matvec!(similar(x), x)
+    r = b .- c
+    u = zero(x)
+    rr, ρ = cg_step!(x, r, u, c, d_inv, 0.0)  # sums of the initial residual; x and r unchanged
+    tol, ρ_prev, iterations = reltol * sqrt(rr), 1.0, 0
+    while iterations < maxiter && sqrt(rr) > tol
+        cg_direction!(u, r, d_inv, ρ / ρ_prev)
+        matvec!(c, u)
+        α = ρ / dot(u, c)
+        ρ_prev = ρ
+        rr, ρ = cg_step!(x, r, u, c, d_inv, α)
+        iterations += 1
+    end
+    return iterations, sqrt(rr), sqrt(rr) <= tol
 end
 
 # Solves ∇·[(σ + ωε'')∇V] = 0 with Jacobi-preconditioned CG. K is never assembled: on the
@@ -140,23 +188,19 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
         return y
     end
 
-    K_mf = LinearMap(matvec!, n_dofs; ismutating=true, issymmetric=true, isposdef=true)
-
     # ── Jacobi-preconditioned CG ─────────────────────────────────────────────
-    P = JacobiPrecond(to_device(1.0 ./ d))
-
     V_dof = zeros(n_dofs)
     apply!(V_dof, ch)  # warm-start from Dirichlet values
+    V_dof = to_device(V_dof)
 
-    V_dof, history = cg!(to_device(V_dof), K_mf, to_device(f); Pl=P, reltol=1e-8, maxiter=10_000,
-                          initially_zero=false, log=true)
+    iterations, residual, converged = pcg!(V_dof, matvec!, to_device(f), to_device(1.0 ./ d);
+                                           reltol = 1e-8, maxiter = 10_000)
     V_dof = Array(V_dof)
 
-    if !history.isconverged
-        @warn "CG did not converge after $(history.iters) iterations " *
-              "(residual=$(history[:resnorm][end]))"
+    if converged
+        @info "CG converged in $iterations iterations"
     else
-        @info "CG converged in $(history.iters) iterations"
+        @warn "CG did not converge after $iterations iterations (residual=$residual)"
     end
 
     apply!(V_dof, ch)

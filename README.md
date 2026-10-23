@@ -78,9 +78,9 @@ evaluated over all cells, with a safety factor of 0.9. The sum runs over the fac
 
 The heat update kernel is parallelised (if this is enabled, see section Enabling Multiple Threads below) by partitioning the grid's z-dimension into chunks, one per Julia thread. The thread count is printed at the start of each phase.
 
-The matrix-vector product of the RF solver is parallelised over alternating z-layers and uses all Julia threads.
+The RF solver's matrix-vector product is parallelised over alternating z-layers, and the conjugate gradient vector updates over chunks of the vectors; both use all Julia threads.
 
-With `use_gpu = true` (see Usage) the heat update and the conjugate gradient iterations of the RF solve run on an NVIDIA GPU through [CUDA.jl](https://cuda.juliagpu.org/), one GPU thread per cell, in double precision like the CPU code. On an RTX 2060 SUPER compared with eight CPU threads, the heat simulation on Example 1's grid is about ten times faster, and `run_simulation` on Example 6's grid about six times. The first GPU run in a Julia session takes about 15 s longer, while CUDA starts and compiles the kernels.
+With `use_gpu = true` (see Usage) the heat update and the conjugate gradient iterations of the RF solve run on an NVIDIA GPU through [CUDA.jl](https://cuda.juliagpu.org/), one GPU thread per cell, in double precision like the CPU code. On an RTX 2060 SUPER compared with eight CPU threads, the heat simulation on Example 1's grid is about ten times faster, and `run_simulation` on Example 6's grid about five times. The first GPU run in a Julia session takes about 15 s longer, while CUDA starts and compiles the kernels.
 
 ## 2. Usage
 
