@@ -63,12 +63,12 @@ function main()
     sigma2 = 0.03  # Standard deviation (controls the width of the Gaussian)
 
     boundary_conditions = Dict(
-        "top" => (x, t) -> 0.0,  # Gaussian in x and y
+        "bottom" => (x, t) -> 0.0,  # Gaussian in x and y
         #"left" => (x, t) -> 0.0,  # Gaussian in x and y
         #"right" => (x, t) -> 0.0,  # Gaussian in x and y
         #"front" => (x, t) -> 0.0,  # Gaussian in x and y
         #"back" => (x, t) -> 0.0,  # Gaussian in x and y
-        "bottom" => (x, t) -> A * exp(-((x[1] - mu)^2 + (x[2] - 0.001)^2) / (2 * sigma2^2))  # Bottom boundary condition remains zero
+        "top" => (x, t) -> A * exp(-((x[1] - mu)^2 + (x[2] - 0.001)^2) / (2 * sigma2^2))
     )
 
 

@@ -58,7 +58,7 @@ julia --project=. --threads auto Examples/Example1.jl  # run an example
 ## Things to know before changing the code
 
 - **Array shapes.** Cell fields (`sigma`, `Qel`, `E_mag`, `T`, `material_indices`) are `(nx, ny, nz)`. The potential `V` is nodal, `(nx+1, ny+1, nz+1)`. `E_vec` is `(3, nx, ny, nz)`.
-- **Two coordinate conventions.** `create_coordinate_grids` returns cell centres in `[0, l]` on every axis. The Ferrite grid, and therefore the `x` passed to boundary-condition functions, is centred in x and y (`[-l/2, l/2]`) and runs `[0, lz]` in z.
+- **Two coordinate conventions.** `create_coordinate_grids` returns cell centres in `[0, l]` on every axis. The Ferrite grid, and therefore the `x` passed to boundary-condition functions, is centred in x and y (`[-l/2, l/2]`) and runs `[0, lz]` in z. z is depth, so `setup_grid` swaps Ferrite's `"top"` and `"bottom"` face names to make `"top"` the z = 0 face.
 - **Uniform grid assumption.** `solve_rf` computes one reference element stiffness matrix and reuses it for every cell. This is only valid for the uniform hex grid that `setup_grid` produces.
 - **Threading.** The heat solver runs inside a `Threads.@spawn` task, where `Threads.@threads` deadlocks, and GLMakie observables may only be written from the main thread. Read the header comments in `src/HeatSolver.jl` and `src/Timelapse.jl` before changing either.
 - **Ignored files.** `*.h5`, `Images/`, `Results/`, `.vscode/`, `prompt.txt` and `benchmark_solvers.jl` are git-ignored output or local scratch. Do not force-add them.

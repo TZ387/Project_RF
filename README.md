@@ -85,12 +85,12 @@ Run `run_simulation` to obtain the electric field results and the heat source `Q
 grid, V_dof, Qel, E_mag, E_vec, V = run_simulation(grid_params, rf_params, boundary_conditions)
 ```
 
-`boundary_conditions` assigns a potential to faces of the domain (`"bottom"`, `"top"`, `"left"`, `"right"`, `"front"`, `"back"`); faces that are not listed are insulating. Each entry is a function of the position `x`, which is centred in x and y and runs in z from 0 at the `"bottom"` face to `lz` at the `"top"` face:
+`boundary_conditions` assigns a potential to faces of the domain (`"top"`, `"bottom"`, `"left"`, `"right"`, `"front"`, `"back"`); faces that are not listed are insulating. Each entry is a function of the position `x`, which is centred in x and y and runs in z, the depth into the tissue, from 0 at the `"top"` face to `lz` at the `"bottom"` face:
 
 ```julia
 boundary_conditions = Dict(
-    "bottom" => (x, t) -> 10.0,   # electrode at 10 V
-    "top"    => (x, t) -> 0.0,    # ground
+    "top"    => (x, t) -> 10.0,   # electrode at 10 V
+    "bottom" => (x, t) -> 0.0,    # ground
 )
 ```
 

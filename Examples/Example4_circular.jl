@@ -64,19 +64,19 @@ function main()
     V0 = 10.0       # Constant potential of the circular electrode
 
     boundary_conditions = Dict(
-        "top" => (x, t) -> 0.0,  # Gaussian in x and y
+        "bottom" => (x, t) -> 0.0,  # Gaussian in x and y
         #"left" => (x, t) -> 0.0,  # Gaussian in x and y
         #"right" => (x, t) -> 0.0,  # Gaussian in x and y
         #"front" => (x, t) -> 0.0,  # Gaussian in x and y
         #"back" => (x, t) -> 0.0,  # Gaussian in x and y
-        "bottom" => (x, t) -> begin
+        "top" => (x, t) -> begin
         r = sqrt((x[1] - x_center)^2 + (x[2] - y_center)^2)
         if r <= radius
             return V0  # Constant potential inside circular region
         else
             return 0.0  # Zero potential outside the circular region
         end
-        end  # Bottom boundary condition remains zero
+        end
     )
 
     

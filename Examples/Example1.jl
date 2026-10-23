@@ -78,8 +78,8 @@ function main()
 
     # Define boundary conditions as functions
     boundary_conditions = Dict(
-        "bottom" => (x, t) -> 10.0,
-        "top"    => (x, t) -> 0.0
+        "top"    => (x, t) -> 10.0,
+        "bottom" => (x, t) -> 0.0
         # Add other boundaries here as needed
     )
 

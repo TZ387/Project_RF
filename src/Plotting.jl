@@ -84,7 +84,7 @@ function plot_field_directions(E_vec, grid_params; arrow_density = 6, title = "E
     # aspect = (1,1,1) forces all three visual axes to the same length regardless
     # of data range, so a flat domain like Example 1 still looks cubic.
     # limits! sets the data extent so Axis3 knows what range to fit into that cube.
-    # The z limits are reversed to put the "bottom" face on top, as in plot_slices.
+    # The z limits are reversed to draw the "top" face (z = 0) on top, as in plot_slices.
     ax = Axis3(fig[1, 1], aspect = (1, 1, 1),
                xlabel = "x [m]", ylabel = "y [m]", zlabel = "z [m]")
     limits!(ax, minimum(x), maximum(x), minimum(y), maximum(y), maximum(z), minimum(z))

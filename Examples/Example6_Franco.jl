@@ -57,8 +57,8 @@ function main()
 
 
     boundary_conditions = Dict(
-        "top" => (x, t) -> 0.0,
-        "bottom" => (x, t) -> begin
+        "bottom" => (x, t) -> 0.0,
+        "top" => (x, t) -> begin
             L = 0.02  # Half of the length of the electrode in meters
             a = 1.28  # Correlation constant
             b = -2.25e-3  # Correlation constant
