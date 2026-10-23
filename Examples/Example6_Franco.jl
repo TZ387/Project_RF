@@ -91,7 +91,5 @@ function main()
     return grid, V_dof, Qel, E_mag, E_vec, V
 end
 
-# Call the main function and return values for potential inspection.
-# invokelatest ensures Julia uses the most recent world age for `main`,
-# avoiding the world-age warning introduced in Julia 1.12.
-grid, V_dof, Qel, E_mag, E_vec, V = Base.invokelatest(main);
+# Call the main function and return values for potential inspection
+grid, V_dof, Qel, E_mag, E_vec, V = main();
