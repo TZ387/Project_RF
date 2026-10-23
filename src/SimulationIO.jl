@@ -84,7 +84,7 @@ function _write_compressed(group, name::String, data::Array, chunk)
     ds = create_dataset(
         group, name, datatype(data), dataspace(data);
         chunk   = chunk,
-        shuffle = (),
+        shuffle = true,
         deflate = 3
     )
     write_dataset(ds, datatype(data), data)
