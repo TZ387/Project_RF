@@ -9,7 +9,7 @@ function geometryDefinition(grid_params::GridParams)
     M = ones(Int, grid_params.nx, grid_params.ny, grid_params.nz)
     
     # Apply conditions using absolute coordinates [m]
-    M[Z .> 0.0000] .= 2    # Skin (0.5 mm depth)
+    M[Z .> 0.0000] .= 2    # Skin (0 mm depth)
     M[Z .> 0.002] .= 3     # Fat (2 mm depth)  
     M[Z .> 0.022] .= 4    # Muscle (22 mm depth)
     
