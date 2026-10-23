@@ -19,7 +19,6 @@ Instructions for AI coding agents working in this repository.
 - `src/SimulationIO.jl` — HDF5 save and load.
 - `Examples/` — runnable scripts for end users (see below).
 - `test/` — test suite, entry point `runtests.jl`. `test/Project.toml` is part of a Pkg workspace and shares the root `Manifest.toml`.
-- `Examples/check_solution.py` — analytical solution for the layered geometry of `Example1.jl`, for checking the computed potential.
 
 ## Less is more
 
