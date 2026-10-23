@@ -148,7 +148,7 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
     V_dof = zeros(n_dofs)
     apply!(V_dof, ch)  # warm-start from Dirichlet values
 
-    V_dof, history = cg!(to_device(V_dof), K_mf, to_device(f); Pl=P, reltol=1e-8, maxiter=3000,
+    V_dof, history = cg!(to_device(V_dof), K_mf, to_device(f); Pl=P, reltol=1e-8, maxiter=10_000,
                           initially_zero=false, log=true)
     V_dof = Array(V_dof)
 
