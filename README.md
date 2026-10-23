@@ -42,7 +42,7 @@ Note that $\epsilon$ is the product of the vacuum permittivity $\epsilon_0 \appr
 
 $$D = \epsilon E = \epsilon_0 \epsilon_r E$$
 
-Tissue conductivities at a given frequency can be looked up in [3].
+Tissue conductivities at a given frequency can be looked up in [3]. The conductivity listed there already includes the dielectric loss $\omega\epsilon''$, so use it as `sigma` with `epsilon_im = 0`, as the examples do.
 
 Once $V$ is known, the electric field is $\mathbf{E} = -\nabla V$ [V/m], and the power density (volumetric heat source) deposited in the tissue by conduction and dielectric losses is:
 
