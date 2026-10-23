@@ -45,6 +45,18 @@ function test_example(m)
         @test !isempty(nodes) && V[nodes] == [f(coords[n], 0.0) for n in nodes]
     end
 
+    # With uniform electrodes on top and bottom only and tissue layered in z (Example 1), the cell
+    # layers act as resistors in series and the solution is known exactly
+    σ = sigma .+ rf.ω .* epsilon_im
+    uniform(face, z) = haskey(bc, face) && allequal(bc[face](x, 0.0) for x in coords if x[3] == z)
+    if length(bc) == 2 && uniform("top", 0) && uniform("bottom", gp.lz) && all(σ .== σ[1:1, 1:1, :])
+        V_top, V_bottom = bc["top"](coords[1], 0.0), bc["bottom"](coords[end], 0.0)
+        R = (coarse.lz / coarse.nz) ./ σ[1, 1, :]
+        J = (V_top - V_bottom) / sum(R)
+        @test V ≈ repeat(reshape(V_top .- J .* [0; cumsum(R)], 1, 1, :), coarse.nx + 1, coarse.ny + 1)
+        @test Qel ≈ repeat(reshape(0.5 * J^2 ./ σ[1, 1, :], 1, 1, :), coarse.nx, coarse.ny)
+    end
+
     # Insulated boundaries: all heat deposited while the source is on is stored
     if haskey(m.recorded, :heat)
         hp = m.recorded[:heat]
