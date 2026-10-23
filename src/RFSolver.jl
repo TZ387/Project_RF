@@ -192,48 +192,21 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
     end
 
     apply!(V_dof, ch)
-    return V_dof, dh, cellvalues
+    return V_dof, dh
 end
 
-# Calculate electric field magnitude E [V/m], power density Q_el [W/m^3] from
-# conduction and dielectric losses, and electric field vector E_vec [V/m] with
-# shape (3, nx, ny, nz).
-# E = -grad(V), so each component is the negated gradient of the voltage field.
-# E_vec[1/2/3, x, y, z] gives the x/y/z component; (3, nx, ny, nz) layout keeps
-# the three components of each cell contiguous in memory (column-major).
-function calculate_fields(cellvalues::CellValues, dh::DofHandler, V_dof::AbstractVector{T}, rf_params::Config.RFParams, grid_params) where T
-    n         = getnbasefunctions(cellvalues)
-    cell_dofs = zeros(Int, n)
-    nqp       = getnquadpoints(cellvalues)
-    sigma_eff = rf_params.sigma .+ rf_params.ω .* rf_params.epsilon_im
-    Q_el      = similar(sigma_eff)
-    E_mag     = similar(sigma_eff)
-    E_vec     = zeros(T, 3, grid_params.nx, grid_params.ny, grid_params.nz)
-
-    for (cell_num, cell) in enumerate(CellIterator(dh))
-        celldofs!(cell_dofs, dh, cell_num)
-        ae = V_dof[cell_dofs]
-        reinit!(cellvalues, cell)
-        x, y, z = cell_index_to_xyz(cell_num, grid_params.nx, grid_params.ny)
-
-        gx, gy, gz = zero(T), zero(T), zero(T)
-        for qp in 1:nqp
-            g   = function_gradient(cellvalues, qp, ae)
-            gx += g[1]
-            gy += g[2]
-            gz += g[3]
-        end
-        gx /= nqp
-        gy /= nqp
-        gz /= nqp
-
-        Q_el[x, y, z]    = 0.5 * sigma_eff[x, y, z] * (gx^2 + gy^2 + gz^2)
-        E_mag[x, y, z]   = sqrt(gx^2 + gy^2 + gz^2)
-        E_vec[1, x, y, z] = -gx
-        E_vec[2, x, y, z] = -gy
-        E_vec[3, x, y, z] = -gz
-    end
-    return Q_el, E_mag, E_vec
+# E = -∇V [V/m] in every cell from the nodal potential V (nx+1, ny+1, nz+1). For trilinear
+# elements the cell's mean gradient is the mean difference along its four parallel edges.
+# Returns the power density Q_el = ½(σ + ωε'')|E|² [W/m³], |E| and E_vec with shape (3, nx, ny, nz).
+function calculate_fields(V, rf_params::Config.RFParams, grid_params)
+    C(a, b, c) = @view V[1+a:end-1+a, 1+b:end-1+b, 1+c:end-1+c]  # corner (a, b, c) of every cell
+    dx, dy, dz = grid_params.lx / grid_params.nx, grid_params.ly / grid_params.ny, grid_params.lz / grid_params.nz
+    Ex = (C(0,0,0) .+ C(0,1,0) .+ C(0,0,1) .+ C(0,1,1) .- C(1,0,0) .- C(1,1,0) .- C(1,0,1) .- C(1,1,1)) ./ 4dx
+    Ey = (C(0,0,0) .+ C(1,0,0) .+ C(0,0,1) .+ C(1,0,1) .- C(0,1,0) .- C(1,1,0) .- C(0,1,1) .- C(1,1,1)) ./ 4dy
+    Ez = (C(0,0,0) .+ C(1,0,0) .+ C(0,1,0) .+ C(1,1,0) .- C(0,0,1) .- C(1,0,1) .- C(0,1,1) .- C(1,1,1)) ./ 4dz
+    E_mag = sqrt.(Ex .^ 2 .+ Ey .^ 2 .+ Ez .^ 2)
+    Q_el  = 0.5 .* (rf_params.sigma .+ rf_params.ω .* rf_params.epsilon_im) .* E_mag .^ 2
+    return Q_el, E_mag, permutedims(cat(Ex, Ey, Ez; dims = 4), (4, 1, 2, 3))
 end
 
 # DOFs are not numbered in node order, so map them onto the grid nodes first.

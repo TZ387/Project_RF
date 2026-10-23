@@ -19,11 +19,11 @@ function run_simulation(grid_params, rf_params, boundary_conditions; use_gpu::Bo
     grid = GridSetup.setup_grid(grid_params)
 
     @info "Solving RF problem$(use_gpu ? " on the GPU" : "")..."
-    V_dof, dh, cellValues = solve_rf(grid, rf_params, grid_params, boundary_conditions; use_gpu)
+    V_dof, dh = solve_rf(grid, rf_params, grid_params, boundary_conditions; use_gpu)
+    V = convert_V(V_dof, dh, grid_params)
 
     @info "Computing electric field and thermal dissipation..."
-    Qel, E_mag, E_vec = calculate_fields(cellValues, dh, V_dof, rf_params, grid_params)
-    V = convert_V(V_dof, dh, grid_params)
+    Qel, E_mag, E_vec = calculate_fields(V, rf_params, grid_params)
 
     return grid, V_dof, Qel, E_mag, E_vec, V
 end
