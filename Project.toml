@@ -22,3 +22,6 @@ LinearAlgebra = "1"
 LinearMaps = "3.11.4"
 Printf = "1"
 StaticArrays = "1.9.18"
+
+[workspace]
+projects = ["test"]

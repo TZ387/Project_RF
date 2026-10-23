@@ -13,6 +13,12 @@ Pkg.activate(".")
 Pkg.instantiate()
 ```
 
+To run the tests (Julia ≥ 1.12):
+
+```julia
+Pkg.test()
+```
+
 ## 1. Theoretical basis
 
 ### 1.1 RF electric field

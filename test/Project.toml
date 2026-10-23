@@ -1,0 +1,6 @@
+[deps]
+Ferrite = "c061ca5d-56c9-439f-9c0e-210fe06d3992"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+Logging = "56ddb016-857b-54e1-b83d-db4d58db5568"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+prrf = "b5d11546-cacb-4622-8a6b-042bba915b18"

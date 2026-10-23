@@ -18,6 +18,7 @@ Instructions for AI coding agents working in this repository.
 - `src/RunSimulation.jl` — the two entry points, `run_simulation` and `run_heat_simulation`.
 - `src/SimulationIO.jl` — HDF5 save and load.
 - `Examples/` — runnable scripts for end users (see below).
+- `test/` — test suite, entry point `runtests.jl`. `test/Project.toml` is part of a Pkg workspace and shares the root `Manifest.toml`.
 - `Examples/check_solution.py` — analytical solution for the layered geometry of `Example1.jl`, for checking the computed potential.
 
 ## Less is more
@@ -48,10 +49,12 @@ The scripts in `Examples/` are meant for end users to open and change settings i
 ```bash
 julia --project=. -e 'using Pkg; Pkg.instantiate()'    # install dependencies
 julia --project=. -e 'using prrf'                      # check that the package loads
+julia --project=. -e 'using Pkg; Pkg.test()'           # run the tests
 julia --project=. --threads auto Examples/Example1.jl  # run an example
 ```
 
-- There is no test suite and no CI. Loading the package is the only quick check.
+- Run the tests after changing `src/` or `Examples/`. They take about a minute. There is no CI, and none should be added; the tests are run locally.
+- `test/examples.jl` runs every example with its solve, plots and file output replaced by stubs, then solves the example's set-up on a coarse grid. It relies on each example defining `geometryDefinition` and `define_material_properties` and calling `run_simulation`, as the existing ones do.
 - The first load precompiles GLMakie and can take several minutes.
 - The examples open GLMakie windows, so they need a display, and they solve grids of 2 to 6.5 million cells. They are not a quick check.
 
@@ -62,4 +65,4 @@ julia --project=. --threads auto Examples/Example1.jl  # run an example
 - **Uniform grid assumption.** `solve_rf` computes one reference element stiffness matrix and reuses it for every cell. This is only valid for the uniform hex grid that `setup_grid` produces.
 - **Threading.** The heat solver runs inside a `Threads.@spawn` task, where `Threads.@threads` deadlocks, and GLMakie observables may only be written from the main thread. Read the header comments in `src/HeatSolver.jl` and `src/Timelapse.jl` before changing either.
 - **Ignored files.** `*.h5`, `Images/`, `Results/`, `.vscode/`, `prompt.txt` and `benchmark_solvers.jl` are git-ignored output or local scratch. Do not force-add them.
-- **Dependencies.** `Manifest.toml` is committed, and every dependency in `Project.toml` has a `[compat]` entry. Change them only when the task is a dependency change.
+- **Dependencies.** `Manifest.toml` is committed and also covers `test/Project.toml`, and every dependency in `Project.toml` has a `[compat]` entry. Change them only when the task is a dependency change.
