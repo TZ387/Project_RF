@@ -54,7 +54,11 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
 
     ch = ConstraintHandler(dh)
     for (boundary_name, condition) in boundary_conditions
-        add!(ch, Dirichlet(:V_dof, getfacetset(grid, boundary_name), condition))
+        # Facets where the condition returns nothing stay insulating
+        prescribed = filter(getfacetset(grid, boundary_name)) do (cell, facet)
+            all(n -> condition(get_node_coordinate(grid, n), 0.0) !== nothing, Ferrite.facets(getcells(grid, cell))[facet])
+        end
+        add!(ch, Dirichlet(:V_dof, prescribed, condition))
     end
     close!(ch)
 
