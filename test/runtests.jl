@@ -12,5 +12,6 @@ const ε0 = 8.854e-12  # permittivity of free space [F/m]
     include("heat_solver.jl")
     include("simulation_io.jl")
     include("gpu.jl")
+    include("plotting.jl")
     include("examples.jl")
 end
