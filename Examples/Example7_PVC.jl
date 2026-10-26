@@ -22,10 +22,11 @@ function define_material_properties()
     materials = Dict{Int, NamedTuple}()
     
     epsilon_0 = 8.854e-12  # Permittivity of free space [F/m]
-    materials[1] = (name = "PVC", sigma = 0.000078, epsilon_re = 0*epsilon_0, epsilon_im = 0*epsilon_0, VHC = 1.0e6, k = 0.025)
-    materials[2] = (name = "Skin", sigma = 0.22, epsilon_re = 0*epsilon_0, epsilon_im = 0*epsilon_0, VHC = 4.18e6, k = 0.6)
-    materials[3] = (name = "Fat", sigma = 0.025, epsilon_re = 0*epsilon_0, epsilon_im = 0*epsilon_0, VHC = 1.0e6, k = 0.5)
-    materials[4] = (name = "Muscle", sigma = 0.5, epsilon_re = 0*epsilon_0, epsilon_im = 0*epsilon_0, VHC = 1.0e6, k = 0.5)
+    # epsilon_re: tissues at 1 MHz from [3] in the README; PVC a typical value
+    materials[1] = (name = "PVC", sigma = 0.000078, epsilon_re = 3.5*epsilon_0, epsilon_im = 0*epsilon_0, VHC = 1.0e6, k = 0.025)
+    materials[2] = (name = "Skin", sigma = 0.22, epsilon_re = 1833*epsilon_0, epsilon_im = 0*epsilon_0, VHC = 4.18e6, k = 0.6)
+    materials[3] = (name = "Fat", sigma = 0.025, epsilon_re = 27.2*epsilon_0, epsilon_im = 0*epsilon_0, VHC = 1.0e6, k = 0.5)
+    materials[4] = (name = "Muscle", sigma = 0.5, epsilon_re = 1836*epsilon_0, epsilon_im = 0*epsilon_0, VHC = 1.0e6, k = 0.5)
     
     return materials
 end
