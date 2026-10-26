@@ -156,7 +156,8 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
 
     # ── Cache conductivities and DOF indices per cell ────────────────────────
     # Cells are numbered x fastest, like the (nx, ny, nz) material arrays.
-    conductivities = vec(complex.(rf_params.sigma .+ rf_params.ω .* rf_params.epsilon_im, .-rf_params.ω .* rf_params.epsilon_re))
+    ωε0            = rf_params.ω * Config.epsilon_0
+    conductivities = vec(complex.(rf_params.sigma .+ ωε0 .* rf_params.epsilon_im, .-ωε0 .* rf_params.epsilon_re))
     cell_dofs_all  = Matrix{Int32}(undef, n_basefuncs, n_cells)
     buf            = zeros(Int, n_basefuncs)
     for cn in 1:n_cells
@@ -223,7 +224,7 @@ function calculate_fields(V, rf_params::Config.RFParams, grid_params)
     Ey = (C(0,0,0) .+ C(1,0,0) .+ C(0,0,1) .+ C(1,0,1) .- C(0,1,0) .- C(1,1,0) .- C(0,1,1) .- C(1,1,1)) ./ 4dy
     Ez = (C(0,0,0) .+ C(1,0,0) .+ C(0,1,0) .+ C(1,1,0) .- C(0,0,1) .- C(1,0,1) .- C(0,1,1) .- C(1,1,1)) ./ 4dz
     E_mag = sqrt.(abs2.(Ex) .+ abs2.(Ey) .+ abs2.(Ez))
-    Q_el  = 0.5 .* (rf_params.sigma .+ rf_params.ω .* rf_params.epsilon_im) .* E_mag .^ 2
+    Q_el  = 0.5 .* (rf_params.sigma .+ rf_params.ω * Config.epsilon_0 .* rf_params.epsilon_im) .* E_mag .^ 2
     return Q_el, E_mag, permutedims(cat(Ex, Ey, Ez; dims = 4), (4, 1, 2, 3))
 end
 

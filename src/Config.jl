@@ -5,11 +5,13 @@ module Config
 # Export the structures and functions to make them available outside this module
 export RFParams, HeatParams, GridParams, setup_material_properties, create_coordinate_grids
 
+const epsilon_0 = 8.854e-12  # Permittivity of free space [F/m]
+
 # Parameters for RF problem
 struct RFParams
     sigma::Array{Float64, 3}  # Electrical conductivity matrix [S/m]
-    epsilon_re::Array{Float64, 3}  # Real part of the permittivity ε' [F/m]
-    epsilon_im::Array{Float64, 3}  # Imaginary part of the permittivity ε'' [F/m]
+    epsilon_re::Array{Float64, 3}  # Real part of the relative permittivity, ε'/ε0
+    epsilon_im::Array{Float64, 3}  # Imaginary part of the relative permittivity, ε''/ε0
     ω::Float64  # Angular frequency of the RF signal [rad/s], ω = 2πf
 end
 

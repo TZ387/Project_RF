@@ -17,7 +17,7 @@ using CUDA: CUDA
         @testset "RF solver matches the CPU" begin
             gp = GridParams(0.09, 0.09, 0.05, 18, 18, 10)
             sigma = [0.1 + 0.05 * l for i in 1:18, j in 1:18, l in 1:10]
-            rf = RFParams(sigma, [1e-7 * (l % 3) for i in 1:18, j in 1:18, l in 1:10], fill(1e-9, size(sigma)), 1e6)
+            rf = RFParams(sigma, [1e4 * (l % 3) for i in 1:18, j in 1:18, l in 1:10], fill(100.0, size(sigma)), 1e6)
             electrode(x, t) = abs(x[1]) <= 0.02 && abs(x[2]) <= 0.02 ? 100.0 * (1 + x[2] / 0.02) : nothing
             bc = Dict("top" => electrode, "bottom" => (x, t) -> 0.0)
             on_gpu = @test_logs min_level = Logging.Warn run_simulation(gp, rf, bc; use_gpu = true)

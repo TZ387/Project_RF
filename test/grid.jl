@@ -26,12 +26,12 @@ using Ferrite: Ferrite, Vec, get_node_coordinate, getcells, getcoordinates, getf
     end
 
     @testset "setup_material_properties" begin
-        materials = Dict(1 => (sigma = 0.1, epsilon_re = 1e-10, epsilon_im = 0.0, VHC = 1e6, k = 0.5),
-                         2 => (sigma = 0.2, epsilon_re = 2e-8, epsilon_im = 1e-9, VHC = 2e6, k = 0.6))
+        materials = Dict(1 => (sigma = 0.1, epsilon_re = 80, epsilon_im = 0, VHC = 1e6, k = 0.5),
+                         2 => (sigma = 0.2, epsilon_re = 2.1, epsilon_im = 0.5, VHC = 2e6, k = 0.6))
         sigma, epsilon_re, epsilon_im, VHC, k = setup_material_properties([1 2; 2 1], materials)
         @test sigma == [0.1 0.2; 0.2 0.1]
-        @test epsilon_re == [1e-10 2e-8; 2e-8 1e-10]
-        @test epsilon_im == [0.0 1e-9; 1e-9 0.0]
+        @test epsilon_re == [80 2.1; 2.1 80]
+        @test epsilon_im == [0 0.5; 0.5 0]
         @test VHC == [1e6 2e6; 2e6 1e6]
         @test k == [0.5 0.6; 0.6 0.5]
     end

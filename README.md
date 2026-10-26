@@ -44,7 +44,9 @@ Note that $\epsilon$ is the product of the vacuum permittivity $\epsilon_0 \appr
 
 $$D = \epsilon E = \epsilon_0 \epsilon_r E$$
 
-Tissue conductivities and relative permittivities at a given frequency can be looked up in [3]. The conductivity listed there already includes the dielectric loss $\omega\epsilon''$, so use it as `sigma` with `epsilon_im = 0`, as the examples do, and the listed relative permittivity times $\epsilon_0$ as `epsilon_re`.
+The code takes relative permittivities: `epsilon_re` is $\epsilon'/\epsilon_0$ and `epsilon_im` is $\epsilon''/\epsilon_0$.
+
+Tissue conductivities and relative permittivities at a given frequency can be looked up in [3]. The conductivity listed there already includes the dielectric loss $\omega\epsilon''$, so use it as `sigma` with `epsilon_im = 0`, and the listed relative permittivity as `epsilon_re`, as the examples do.
 
 Once $V$ is known, the electric field is $\mathbf{E} = -\nabla V$ [V/m], and the power density (volumetric heat source) deposited in the tissue by conduction and dielectric losses is:
 

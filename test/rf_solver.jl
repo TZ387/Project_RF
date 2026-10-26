@@ -3,12 +3,12 @@ using Ferrite: get_node_coordinate
 @testset "RF solver" begin
     @testset "layered plates match the analytical solution" begin
         # Four layers between an electrode on top and ground at the bottom, in series like
-        # impedances L/γ with γ = σ − iωε'. The potential is linear within each layer, so linear
+        # impedances L/γ with γ = σ − iωε0ε. The potential is linear within each layer, so linear
         # elements reproduce it at the nodes.
         σ = [0.3, 0.22, 0.025, 0.5]
-        ε = [80, 1833, 27.2, 1836] .* 8.854e-12
+        ε = [80, 1833, 27.2, 1836]  # relative permittivity
         ω = 2π * 1e6
-        γ = σ .- im .* ω .* ε
+        γ = σ .- im .* ω .* ε0 .* ε
         L = [0.5e-3, 1.5e-3, 3.5e-3, 5.0e-3]
         gp = GridParams(0.01, 0.01, sum(L), 3, 3, 21)  # layer interfaces fall on nodes
         layer = [findfirst(>(z), cumsum(L)) for z in create_coordinate_grids(gp)[3]]
@@ -27,10 +27,10 @@ using Ferrite: get_node_coordinate
 
     @testset "dielectric loss adds to Qel, ε' does not" begin
         gp = GridParams(0.01, 0.01, 0.01, 2, 2, 4)
-        σ, ε_re, ε_im, ω = 0.2, 1e-7, 1e-8, 1e6
+        σ, ε_re, ε_im, ω = 0.2, 1e4, 1e3, 1e6
         rf = RFParams(fill(σ, 2, 2, 4), fill(ε_re, 2, 2, 4), fill(ε_im, 2, 2, 4), ω)
         _, _, Qel, _, _, _ = @test_logs min_level = Logging.Warn run_simulation(gp, rf, Dict("top" => (x, t) -> 5.0, "bottom" => (x, t) -> 0.0))
-        @test Qel ≈ fill(0.5 * (σ + ω * ε_im) * (5.0 / gp.lz)^2, 2, 2, 4) rtol = 1e-6
+        @test Qel ≈ fill(0.5 * (σ + ω * ε0 * ε_im) * (5.0 / gp.lz)^2, 2, 2, 4) rtol = 1e-6
     end
 
     @testset "electrode on part of a face, as f(x) and f(x, t)" begin

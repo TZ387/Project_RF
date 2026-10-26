@@ -47,8 +47,8 @@ function test_example(m)
 
     # With uniform electrodes on top and bottom only and tissue layered in z (Example 1), the cell
     # layers act as impedances in series and the solution is known exactly
-    σ = sigma .+ rf.ω .* epsilon_im
-    γ = complex.(σ, -rf.ω .* epsilon_re)
+    σ = sigma .+ rf.ω * ε0 .* epsilon_im
+    γ = complex.(σ, -rf.ω * ε0 .* epsilon_re)
     uniform(face, z) = haskey(bc, face) && allequal(bc[face](x, 0.0) for x in coords if x[3] == z)
     if length(bc) == 2 && uniform("top", 0) && uniform("bottom", gp.lz) && all(γ .== γ[1:1, 1:1, :])
         V_top, V_bottom = bc["top"](coords[1], 0.0), bc["bottom"](coords[end], 0.0)
