@@ -52,7 +52,7 @@ Once $V$ is known, the electric field is $\mathbf{E} = -\nabla V$ [V/m], and the
 
 $$Q_{el} = \frac{1}{2} (\sigma + \omega\epsilon'') |\mathbf{E}|^2 \quad \text{[W/m}^3\text{]}, \qquad |\mathbf{E}|^2 = |E_x|^2 + |E_y|^2 + |E_z|^2$$
 
-The displacement current deposits no heat; $\epsilon'$ only changes how the field is distributed. $V$ and $\mathbf{E}$ are amplitudes (peak values); with RMS values the factor $\frac{1}{2}$ drops out.
+The displacement current deposits no heat; $\epsilon'$ only changes how the field is distributed. $V$ and $\mathbf{E}$ are peak amplitudes, so $|\mathbf{E}|$ is $\sqrt{2}$ times the RMS field; with RMS values the factor $\frac{1}{2}$ drops out.
 
 The potential is computed with linear finite elements on a uniform hexahedral grid, using a matrix-free COCG solver [6], the variant of the conjugate gradient method for complex symmetric systems.
 
