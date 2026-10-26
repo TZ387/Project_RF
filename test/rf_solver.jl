@@ -34,6 +34,18 @@ using Ferrite: get_node_coordinate
         @test Qel ≈ fill(0.5 * (σ + ω * ε0 * ε_im) * (5.0 / gp.lz)^2, 2, 2, 4) rtol = 1e-6
     end
 
+    @testset "Qel is the mean power density of each cell" begin
+        # V = xy is harmonic and trilinear, so the elements reproduce it. |∇V|² = x² + y² varies
+        # within a cell; its mean is x_c² + y_c² + (dx² + dy²)/12 with (x_c, y_c) the cell centre
+        gp = GridParams(0.02, 0.03, 0.01, 4, 6, 2)
+        σ = 0.3
+        rf = RFParams(fill(σ, 4, 6, 2), zeros(4, 6, 2), zeros(4, 6, 2), 1e6)
+        bc = Dict(face => (x, t) -> x[1] * x[2] for face in ("top", "bottom", "left", "right", "front", "back"))
+        _, _, Qel, _, _, _ = @test_logs min_level = Logging.Warn run_simulation(gp, rf, bc)
+        X, Y, _ = create_coordinate_grids(gp)
+        @test Qel ≈ 0.5σ .* (X .^ 2 .+ Y .^ 2 .+ ((gp.lx / gp.nx)^2 + (gp.ly / gp.ny)^2) / 12) rtol = 1e-6
+    end
+
     @testset "electrode on part of a face, as f(x) and f(x, t)" begin
         gp = GridParams(0.09, 0.09, 0.05, 18, 18, 10)  # cubic cells, 5 mm
         rf = RFParams(fill(0.3, 18, 18, 10), zeros(18, 18, 10), zeros(18, 18, 10), 1e6)

@@ -213,17 +213,25 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
     return V_dof, dh
 end
 
-# E = -∇V [V/m] in every cell from the nodal potential V (nx+1, ny+1, nz+1). For trilinear
-# elements the cell's mean gradient is the mean difference along its four parallel edges.
-# Returns the power density Q_el = ½(σ + ωε'')|E|² [W/m³], |E| and E_vec with shape (3, nx, ny, nz).
-# E is complex and |E|² = |Ex|² + |Ey|² + |Ez|²; the displacement current ωε' deposits no heat.
+# E = -∇V [V/m] in every cell from the nodal potential V (nx+1, ny+1, nz+1). Returns Q_el, E_mag
+# and E_vec. E_vec, with shape (3, nx, ny, nz), is the cell's mean field: for trilinear elements,
+# the mean difference along its four parallel edges. E_mag is the root mean square of |E| over the
+# cell, with |E|² = |Ex|² + |Ey|² + |Ez|² as E is complex, so Q_el = ½(σ + ωε'')E_mag² [W/m³] is
+# the cell's mean power density and adds up to the power the electrodes deliver. The displacement
+# current ωε' deposits no heat.
 function calculate_fields(V, rf_params::Config.RFParams, grid_params)
     C(a, b, c) = @view V[1+a:end-1+a, 1+b:end-1+b, 1+c:end-1+c]  # corner (a, b, c) of every cell
     dx, dy, dz = grid_params.lx / grid_params.nx, grid_params.ly / grid_params.ny, grid_params.lz / grid_params.nz
     Ex = (C(0,0,0) .+ C(0,1,0) .+ C(0,0,1) .+ C(0,1,1) .- C(1,0,0) .- C(1,1,0) .- C(1,0,1) .- C(1,1,1)) ./ 4dx
     Ey = (C(0,0,0) .+ C(1,0,0) .+ C(0,0,1) .+ C(1,0,1) .- C(0,1,0) .- C(1,1,0) .- C(0,1,1) .- C(1,1,1)) ./ 4dy
     Ez = (C(0,0,0) .+ C(1,0,0) .+ C(0,1,0) .+ C(1,1,0) .- C(0,0,1) .- C(1,0,1) .- C(0,1,1) .- C(1,1,1)) ./ 4dz
-    E_mag = sqrt.(abs2.(Ex) .+ abs2.(Ey) .+ abs2.(Ez))
+    # Variance of a field component over the cell, times the spacing squared, from the differences
+    # along four parallel edges at positions (0,0), (1,0), (0,1), (1,1) across the cell
+    variance(d00, d10, d01, d11) = (abs2(d00 - d10 + d01 - d11) + abs2(d00 + d10 - d01 - d11)) / 48 + abs2(d00 - d10 - d01 + d11) / 144
+    E_mag = sqrt.(abs2.(Ex) .+ abs2.(Ey) .+ abs2.(Ez) .+
+                  variance.(C(0,0,0) .- C(1,0,0), C(0,1,0) .- C(1,1,0), C(0,0,1) .- C(1,0,1), C(0,1,1) .- C(1,1,1)) ./ dx^2 .+
+                  variance.(C(0,0,0) .- C(0,1,0), C(1,0,0) .- C(1,1,0), C(0,0,1) .- C(0,1,1), C(1,0,1) .- C(1,1,1)) ./ dy^2 .+
+                  variance.(C(0,0,0) .- C(0,0,1), C(1,0,0) .- C(1,0,1), C(0,1,0) .- C(0,1,1), C(1,1,0) .- C(1,1,1)) ./ dz^2)
     Q_el  = 0.5 .* (rf_params.sigma .+ rf_params.ω * Config.epsilon_0 .* rf_params.epsilon_im) .* E_mag .^ 2
     return Q_el, E_mag, permutedims(cat(Ex, Ey, Ez; dims = 4), (4, 1, 2, 3))
 end

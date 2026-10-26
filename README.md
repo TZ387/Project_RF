@@ -54,7 +54,7 @@ $$Q_{el} = \frac{1}{2} (\sigma + \omega\epsilon'') |\mathbf{E}|^2 \quad \text{[W
 
 The displacement current deposits no heat; $\epsilon'$ only changes how the field is distributed. $V$ and $\mathbf{E}$ are peak amplitudes, so $|\mathbf{E}|$ is $\sqrt{2}$ times the RMS field; with RMS values the factor $\frac{1}{2}$ drops out.
 
-The potential is computed with linear finite elements on a uniform hexahedral grid, using a matrix-free COCG solver [6], the variant of the conjugate gradient method for complex symmetric systems.
+The potential is computed with linear finite elements on a uniform hexahedral grid, using a matrix-free COCG solver [6], the variant of the conjugate gradient method for complex symmetric systems. $Q_{el}$ of a cell is the mean of the power density over the cell, which is exact for these elements, so the $Q_{el}$ of all cells adds up to the power the electrodes deliver.
 
 ### 1.2 Heat equation
 
@@ -109,7 +109,7 @@ boundary_conditions = Dict(
 )
 ```
 
-`Qel` and `E_mag` are cell arrays of size `(nx, ny, nz)`, `E_vec` is `(3, nx, ny, nz)`, and `V` is the potential at the grid nodes, `(nx+1, ny+1, nz+1)`. `V` and `E_vec` are complex amplitudes (Section 1.1): `abs.(V)` is the amplitude of the potential and `angle.(V)` its phase. `plot_graphs` shows $|V|$, and in each cell the direction of the field at the instant it is strongest there.
+`Qel` and `E_mag` are cell arrays of size `(nx, ny, nz)`, `E_vec` is `(3, nx, ny, nz)`, and `V` is the potential at the grid nodes, `(nx+1, ny+1, nz+1)`. `E_mag` is the root mean square of $|\mathbf{E}|$ over each cell, so that `Qel` = ½(σ + ωε'')`E_mag`², and `E_vec` is the mean field of each cell. `V` and `E_vec` are complex amplitudes (Section 1.1): `abs.(V)` is the amplitude of the potential and `angle.(V)` its phase. `plot_graphs` shows $|V|$, and in each cell the direction of the field at the instant it is strongest there.
 
 Pass `use_gpu = true` to solve on an NVIDIA GPU (Section 1.3); the results are returned as ordinary arrays either way.
 
