@@ -222,9 +222,11 @@ end
 function calculate_fields(V, rf_params::Config.RFParams, grid_params)
     C(a, b, c) = @view V[1+a:end-1+a, 1+b:end-1+b, 1+c:end-1+c]  # corner (a, b, c) of every cell
     dx, dy, dz = grid_params.lx / grid_params.nx, grid_params.ly / grid_params.ny, grid_params.lz / grid_params.nz
-    Ex = (C(0,0,0) .+ C(0,1,0) .+ C(0,0,1) .+ C(0,1,1) .- C(1,0,0) .- C(1,1,0) .- C(1,0,1) .- C(1,1,1)) ./ 4dx
-    Ey = (C(0,0,0) .+ C(1,0,0) .+ C(0,0,1) .+ C(1,0,1) .- C(0,1,0) .- C(1,1,0) .- C(0,1,1) .- C(1,1,1)) ./ 4dy
-    Ez = (C(0,0,0) .+ C(1,0,0) .+ C(0,1,0) .+ C(1,1,0) .- C(0,0,1) .- C(1,0,1) .- C(0,1,1) .- C(1,1,1)) ./ 4dz
+    E_vec = similar(V, 3, size(V, 1) - 1, size(V, 2) - 1, size(V, 3) - 1)
+    Ex, Ey, Ez = (view(E_vec, i, :, :, :) for i in 1:3)
+    Ex .= (C(0,0,0) .+ C(0,1,0) .+ C(0,0,1) .+ C(0,1,1) .- C(1,0,0) .- C(1,1,0) .- C(1,0,1) .- C(1,1,1)) ./ 4dx
+    Ey .= (C(0,0,0) .+ C(1,0,0) .+ C(0,0,1) .+ C(1,0,1) .- C(0,1,0) .- C(1,1,0) .- C(0,1,1) .- C(1,1,1)) ./ 4dy
+    Ez .= (C(0,0,0) .+ C(1,0,0) .+ C(0,1,0) .+ C(1,1,0) .- C(0,0,1) .- C(1,0,1) .- C(0,1,1) .- C(1,1,1)) ./ 4dz
     # Variance of a field component over the cell, times the spacing squared, from the differences
     # along four parallel edges at positions (0,0), (1,0), (0,1), (1,1) across the cell
     variance(d00, d10, d01, d11) = (abs2(d00 - d10 + d01 - d11) + abs2(d00 + d10 - d01 - d11)) / 48 + abs2(d00 - d10 - d01 + d11) / 144
@@ -233,7 +235,7 @@ function calculate_fields(V, rf_params::Config.RFParams, grid_params)
                   variance.(C(0,0,0) .- C(0,1,0), C(1,0,0) .- C(1,1,0), C(0,0,1) .- C(0,1,1), C(1,0,1) .- C(1,1,1)) ./ dy^2 .+
                   variance.(C(0,0,0) .- C(0,0,1), C(1,0,0) .- C(1,0,1), C(0,1,0) .- C(0,1,1), C(1,1,0) .- C(1,1,1)) ./ dz^2)
     Q_el  = 0.5 .* (rf_params.sigma .+ rf_params.ω * Config.epsilon_0 .* rf_params.epsilon_im) .* E_mag .^ 2
-    return Q_el, E_mag, permutedims(cat(Ex, Ey, Ez; dims = 4), (4, 1, 2, 3))
+    return Q_el, E_mag, E_vec
 end
 
 # DOFs are not numbered in node order, so copy each cell's DOF values to its nodes.
