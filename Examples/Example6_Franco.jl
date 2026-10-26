@@ -5,13 +5,12 @@ using prrf
 function geometryDefinition(grid_params::GridParams)
     # Get coordinate grids from Config module (implementation details hidden)
     X, Y, Z = create_coordinate_grids(grid_params)
-    # Initialize every cell with material 1
+    # Initialize every cell with material 1, skin
     M = ones(Int, grid_params.nx, grid_params.ny, grid_params.nz)
-    
+
     # Apply conditions using absolute coordinates [m]
-    M[Z .> 0.0000] .= 2    # Skin (0 mm depth)
-    M[Z .> 0.002] .= 3     # Fat (2 mm depth)  
-    M[Z .> 0.022] .= 4    # Muscle (22 mm depth)
+    M[Z .> 0.002] .= 2     # Fat (2 mm depth)
+    M[Z .> 0.022] .= 3    # Muscle (22 mm depth)
     
     return M
 end
@@ -20,11 +19,10 @@ end
 function define_material_properties()
     materials = Dict{Int, NamedTuple}()
     
-    # Relative permittivities; epsilon_re of the tissues at 1 MHz from [3] in the README, the gel taken as water-like
-    materials[1] = (name = "Gel",    sigma = 0.3,   epsilon_re = 80,   epsilon_im = 0, VHC = 1.0e6, k = 0.025)
-    materials[2] = (name = "Skin",   sigma = 0.22,  epsilon_re = 1833, epsilon_im = 0, VHC = 4.18e6, k = 0.6)
-    materials[3] = (name = "Fat",    sigma = 0.025, epsilon_re = 27.2, epsilon_im = 0, VHC = 1.0e6, k = 0.5)
-    materials[4] = (name = "Muscle", sigma = 0.5,   epsilon_re = 1836, epsilon_im = 0, VHC = 1.0e6, k = 0.5)
+    # Relative permittivities; epsilon_re of the tissues at 1 MHz from [3] in the README
+    materials[1] = (name = "Skin",   sigma = 0.22,  epsilon_re = 1833, epsilon_im = 0, VHC = 4.18e6, k = 0.6)
+    materials[2] = (name = "Fat",    sigma = 0.025, epsilon_re = 27.2, epsilon_im = 0, VHC = 1.0e6, k = 0.5)
+    materials[3] = (name = "Muscle", sigma = 0.5,   epsilon_re = 1836, epsilon_im = 0, VHC = 1.0e6, k = 0.5)
     
     return materials
 end
