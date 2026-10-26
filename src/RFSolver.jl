@@ -16,7 +16,8 @@ Base.@propagate_inbounds function cell_product(v, cell_dofs, conductivities, Ke_
 end
 
 # Adds every cell's contribution to y. On the CPU, z-layers of equal parity share no DOFs,
-# so each half runs in parallel; on the GPU, each cell is a thread and adds atomically.
+# so each half runs in parallel; on the GPU, each cell is a thread and adds atomically, to the
+# real and imaginary parts separately, as CUDA has no complex atomics.
 function add_cells!(y, v, cell_dofs, conductivities, Ke_ref, n_layer)
     for parity in 1:2
         Threads.@threads for iz in parity:2:length(conductivities) ÷ n_layer
@@ -31,22 +32,25 @@ function add_cells!(y, v, cell_dofs, conductivities, Ke_ref, n_layer)
 end
 
 add_cells!(y::CuArray, v, cell_dofs, conductivities, Ke_ref, _) =
-    @cuda threads = 256 blocks = cld(length(conductivities), 256) add_cells_kernel!(y, v, cell_dofs, conductivities, Ke_ref)
+    @cuda threads = 256 blocks = cld(length(conductivities), 256) add_cells_kernel!(reinterpret(Float64, y), v, cell_dofs, conductivities, Ke_ref)
 
+# y holds the real and imaginary part of each entry in turn
 function add_cells_kernel!(y, v, cell_dofs, conductivities, Ke_ref)
     cn = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     if cn <= length(conductivities)
         dofs, lr = @inbounds cell_product(v, cell_dofs, conductivities, Ke_ref, cn)
         for i in 1:8
-            @inbounds CUDA.@atomic y[dofs[i]] += lr[i]
+            @inbounds CUDA.@atomic y[2dofs[i] - 1] += real(lr[i])
+            @inbounds CUDA.@atomic y[2dofs[i]] += imag(lr[i])
         end
     end
     return
 end
 
-# ── Jacobi-preconditioned CG ──────────────────────────────────────────────────
-# Stops when ‖r‖ ≤ reltol·‖r₀‖, as IterativeSolvers.cg! did. The vector work takes three passes
-# per iteration: threaded loops on the CPU, broadcasts on the GPU.
+# ── Jacobi-preconditioned COCG ────────────────────────────────────────────────
+# COCG is CG for complex symmetric systems: the products uᵀv are not conjugated (van der Vorst
+# and Melissen 1990). Stops when ‖r‖ ≤ reltol·‖r₀‖, as IterativeSolvers.cg! did. The vector work
+# takes three passes per iteration: threaded loops on the CPU, broadcasts on the GPU.
 
 # Runs f on one chunk of 1:n per thread and returns the chunk results
 on_chunks(f, n) = fetch.([Threads.@spawn f(c) for c in Iterators.partition(1:n, cld(n, Threads.nthreads()))])
@@ -61,14 +65,14 @@ function cg_direction!(u, r, d_inv, β)
 end
 cg_direction!(u::CuArray, r, d_inv, β) = (u .= d_inv .* r .+ β .* u)
 
-# x += α u and r -= α c; returns r·r and r·(d_inv .* r)
+# x += α u and r -= α c; returns ‖r‖² and rᵀ(d_inv .* r)
 function cg_step!(x, r, u, c, d_inv, α)
     sums = on_chunks(length(x)) do chunk
-        rr = rz = 0.0
+        rr, rz = 0.0, zero(eltype(r))
         @inbounds for i in chunk
             x[i] += α * u[i]
             r[i] -= α * c[i]
-            rr += r[i]^2
+            rr += abs2(r[i])
             rz += d_inv[i] * r[i]^2
         end
         rr, rz
@@ -78,21 +82,21 @@ end
 function cg_step!(x::CuArray, r, u, c, d_inv, α)
     x .+= α .* u
     r .-= α .* c
-    return dot(r, r), mapreduce((ri, di) -> di * ri^2, +, r, d_inv)
+    return sum(abs2, r), mapreduce((ri, di) -> di * ri^2, +, r, d_inv)
 end
 
 # Solves A x = b from the given x, with A applied by matvec!(y, v) and d_inv = 1 ./ diag(A).
 # Returns the number of iterations, the final ‖r‖ and whether it converged.
-function pcg!(x, matvec!, b, d_inv; reltol, maxiter)
+function cocg!(x, matvec!, b, d_inv; reltol, maxiter)
     c = matvec!(similar(x), x)
     r = b .- c
     u = zero(x)
     rr, ρ = cg_step!(x, r, u, c, d_inv, 0.0)  # sums of the initial residual; x and r unchanged
-    tol, ρ_prev, iterations = reltol * sqrt(rr), 1.0, 0
+    tol, ρ_prev, iterations = reltol * sqrt(rr), one(ρ), 0
     while iterations < maxiter && sqrt(rr) > tol
         cg_direction!(u, r, d_inv, ρ / ρ_prev)
         matvec!(c, u)
-        α = ρ / dot(u, c)
+        α = ρ / (transpose(u) * c)
         ρ_prev = ρ
         rr, ρ = cg_step!(x, r, u, c, d_inv, α)
         iterations += 1
@@ -100,9 +104,10 @@ function pcg!(x, matvec!, b, d_inv; reltol, maxiter)
     return iterations, sqrt(rr), sqrt(rr) <= tol
 end
 
-# Solves ∇·[(σ + ωε'')∇V] = 0 with Jacobi-preconditioned CG. K is never assembled: on the
-# uniform grid each cell's stiffness matrix is its conductivity times one reference matrix.
-# With use_gpu = true the CG iterations run on the GPU; set-up and result stay on the CPU.
+# Solves ∇·[(σ + ωε'' − iωε')∇V] = 0 for the complex amplitude V with Jacobi-preconditioned
+# COCG. K is never assembled: on the uniform grid each cell's stiffness matrix is its complex
+# conductivity times one reference matrix.
+# With use_gpu = true the COCG iterations run on the GPU; set-up and result stay on the CPU.
 function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridParams, boundary_conditions;
                   use_gpu::Bool = false)
 
@@ -151,7 +156,7 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
 
     # ── Cache conductivities and DOF indices per cell ────────────────────────
     # Cells are numbered x fastest, like the (nx, ny, nz) material arrays.
-    conductivities = vec(rf_params.sigma .+ rf_params.ω .* rf_params.epsilon_im)
+    conductivities = vec(complex.(rf_params.sigma .+ rf_params.ω .* rf_params.epsilon_im, .-rf_params.ω .* rf_params.epsilon_re))
     cell_dofs_all  = Matrix{Int32}(undef, n_basefuncs, n_cells)
     buf            = zeros(Int, n_basefuncs)
     for cn in 1:n_cells
@@ -160,8 +165,8 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
     end
 
     # ── Build RHS f and Jacobi diagonal d ───────────────────────────────────
-    f  = zeros(n_dofs)
-    d  = zeros(n_dofs)
+    f  = zeros(ComplexF64, n_dofs)
+    d  = zeros(ComplexF64, n_dofs)
     Kd = diag(Ke_ref)  # SVector{8} diagonal
 
     for cn in 1:n_cells
@@ -188,19 +193,19 @@ function solve_rf(grid, rf_params::Config.RFParams, grid_params::Config.GridPara
         return y
     end
 
-    # ── Jacobi-preconditioned CG ─────────────────────────────────────────────
-    V_dof = zeros(n_dofs)
+    # ── Jacobi-preconditioned COCG ───────────────────────────────────────────
+    V_dof = zeros(ComplexF64, n_dofs)
     apply!(V_dof, ch)  # warm-start from Dirichlet values
     V_dof = to_device(V_dof)
 
-    iterations, residual, converged = pcg!(V_dof, matvec!, to_device(f), to_device(1.0 ./ d);
-                                           reltol = 1e-8, maxiter = 10_000)
+    iterations, residual, converged = cocg!(V_dof, matvec!, to_device(f), to_device(1.0 ./ d);
+                                            reltol = 1e-8, maxiter = 10_000)
     V_dof = Array(V_dof)
 
     if converged
-        @info "CG converged in $iterations iterations"
+        @info "COCG converged in $iterations iterations"
     else
-        @warn "CG did not converge after $iterations iterations (residual=$residual)"
+        @warn "COCG did not converge after $iterations iterations (residual=$residual)"
     end
 
     apply!(V_dof, ch)
@@ -210,13 +215,14 @@ end
 # E = -∇V [V/m] in every cell from the nodal potential V (nx+1, ny+1, nz+1). For trilinear
 # elements the cell's mean gradient is the mean difference along its four parallel edges.
 # Returns the power density Q_el = ½(σ + ωε'')|E|² [W/m³], |E| and E_vec with shape (3, nx, ny, nz).
+# E is complex and |E|² = |Ex|² + |Ey|² + |Ez|²; the displacement current ωε' deposits no heat.
 function calculate_fields(V, rf_params::Config.RFParams, grid_params)
     C(a, b, c) = @view V[1+a:end-1+a, 1+b:end-1+b, 1+c:end-1+c]  # corner (a, b, c) of every cell
     dx, dy, dz = grid_params.lx / grid_params.nx, grid_params.ly / grid_params.ny, grid_params.lz / grid_params.nz
     Ex = (C(0,0,0) .+ C(0,1,0) .+ C(0,0,1) .+ C(0,1,1) .- C(1,0,0) .- C(1,1,0) .- C(1,0,1) .- C(1,1,1)) ./ 4dx
     Ey = (C(0,0,0) .+ C(1,0,0) .+ C(0,0,1) .+ C(1,0,1) .- C(0,1,0) .- C(1,1,0) .- C(0,1,1) .- C(1,1,1)) ./ 4dy
     Ez = (C(0,0,0) .+ C(1,0,0) .+ C(0,1,0) .+ C(1,1,0) .- C(0,0,1) .- C(1,0,1) .- C(0,1,1) .- C(1,1,1)) ./ 4dz
-    E_mag = sqrt.(Ex .^ 2 .+ Ey .^ 2 .+ Ez .^ 2)
+    E_mag = sqrt.(abs2.(Ex) .+ abs2.(Ey) .+ abs2.(Ez))
     Q_el  = 0.5 .* (rf_params.sigma .+ rf_params.ω .* rf_params.epsilon_im) .* E_mag .^ 2
     return Q_el, E_mag, permutedims(cat(Ex, Ey, Ez; dims = 4), (4, 1, 2, 3))
 end

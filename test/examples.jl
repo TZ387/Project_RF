@@ -26,13 +26,13 @@ end
 # Checks the recorded set-up, then solves the example's geometry and boundary conditions on a coarse grid
 function test_example(m)
     (; gp, rf, bc) = m.recorded[:rf]
-    @test size(rf.sigma) == size(rf.epsilon_im) == (gp.nx, gp.ny, gp.nz)
+    @test size(rf.sigma) == size(rf.epsilon_re) == size(rf.epsilon_im) == (gp.nx, gp.ny, gp.nz)
     @test all(>(0), rf.sigma)
     @test keys(bc) ⊆ ("top", "bottom", "left", "right", "front", "back")
 
     coarse = GridParams(gp.lx, gp.ly, gp.lz, cld(gp.nx, 10), cld(gp.ny, 10), cld(gp.nz, 5))
-    sigma, epsilon_im, VHC, k = setup_material_properties(m.geometryDefinition(coarse), m.define_material_properties())
-    grid, _, Qel, _, _, V = @test_logs min_level = Logging.Warn run_simulation(coarse, RFParams(sigma, epsilon_im, rf.ω), bc)
+    sigma, epsilon_re, epsilon_im, VHC, k = setup_material_properties(m.geometryDefinition(coarse), m.define_material_properties())
+    grid, _, Qel, _, _, V = @test_logs min_level = Logging.Warn run_simulation(coarse, RFParams(sigma, epsilon_re, epsilon_im, rf.ω), bc)
     @test all(isfinite, V) && all(>=(0), Qel)
 
     # Every node where a boundary condition gives a value holds that value
@@ -46,15 +46,16 @@ function test_example(m)
     end
 
     # With uniform electrodes on top and bottom only and tissue layered in z (Example 1), the cell
-    # layers act as resistors in series and the solution is known exactly
+    # layers act as impedances in series and the solution is known exactly
     σ = sigma .+ rf.ω .* epsilon_im
+    γ = complex.(σ, -rf.ω .* epsilon_re)
     uniform(face, z) = haskey(bc, face) && allequal(bc[face](x, 0.0) for x in coords if x[3] == z)
-    if length(bc) == 2 && uniform("top", 0) && uniform("bottom", gp.lz) && all(σ .== σ[1:1, 1:1, :])
+    if length(bc) == 2 && uniform("top", 0) && uniform("bottom", gp.lz) && all(γ .== γ[1:1, 1:1, :])
         V_top, V_bottom = bc["top"](coords[1], 0.0), bc["bottom"](coords[end], 0.0)
-        R = (coarse.lz / coarse.nz) ./ σ[1, 1, :]
-        J = (V_top - V_bottom) / sum(R)
-        @test V ≈ repeat(reshape(V_top .- J .* [0; cumsum(R)], 1, 1, :), coarse.nx + 1, coarse.ny + 1)
-        @test Qel ≈ repeat(reshape(0.5 * J^2 ./ σ[1, 1, :], 1, 1, :), coarse.nx, coarse.ny)
+        Z = (coarse.lz / coarse.nz) ./ γ[1, 1, :]
+        J = (V_top - V_bottom) / sum(Z)
+        @test V ≈ repeat(reshape(V_top .- J .* [0; cumsum(Z)], 1, 1, :), coarse.nx + 1, coarse.ny + 1)
+        @test Qel ≈ repeat(reshape(0.5 * abs2(J) .* σ[1, 1, :] ./ abs2.(γ[1, 1, :]), 1, 1, :), coarse.nx, coarse.ny)
     end
 
     # Insulated boundaries: all heat deposited while the source is on is stored

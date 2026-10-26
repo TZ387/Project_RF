@@ -60,7 +60,8 @@ end
 
 # Plots uniform-length arrows showing the direction of the electric field on a
 # subsampled 3D grid. Arrow length is constant — magnitude information is shown
-# separately in the E_mag slice plot.
+# separately in the E_mag slice plot. The arrows show Re E, the field when the electrode
+# potentials peak.
 #
 # arrow_density is the number of arrows along each axis.
 function plot_field_directions(E_vec, grid_params; arrow_density = 6, title = "E-field Direction")
@@ -98,7 +99,7 @@ function plot_field_directions(E_vec, grid_params; arrow_density = 6, title = "E
     for iz in zi, iy in yi, ix in xi
         k += 1
         ps[k] = Point3f(x[ix], y[iy], z[iz])
-        ex, ey, ez = E_vec[1, ix, iy, iz], E_vec[2, ix, iy, iz], E_vec[3, ix, iy, iz]
+        ex, ey, ez = real(E_vec[1, ix, iy, iz]), real(E_vec[2, ix, iy, iz]), real(E_vec[3, ix, iy, iz])
         m = sqrt(ex^2 + ey^2 + ez^2)
         ns[k] = m > 0 ? Vec3f(ex/m, ey/m, ez/m) : Vec3f(0f0, 0f0, 0f0)
     end
@@ -117,7 +118,7 @@ function plot_graphs(material_indices, grid_params, Qel, E_mag, E_vec, V, filena
                        ticks = sort(unique(material_indices)), title = "Media Distribution")
     fig2 = plot_slices(Qel, grid_params, title = "Distribution of Qel [W/m³]")
     fig3 = plot_slices(E_mag, grid_params, title = "Distribution of E [V/m]")
-    fig4 = plot_slices(V, grid_params, title = "Distribution of V [V]")
+    fig4 = plot_slices(abs.(V), grid_params, title = "Distribution of |V| [V]")
     fig5 = plot_field_directions(E_vec, grid_params; arrow_density, title = "E-field Direction")
 
     display(GLMakie.Screen(), fig1)

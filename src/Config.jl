@@ -8,6 +8,7 @@ export RFParams, HeatParams, GridParams, setup_material_properties, create_coord
 # Parameters for RF problem
 struct RFParams
     sigma::Array{Float64, 3}  # Electrical conductivity matrix [S/m]
+    epsilon_re::Array{Float64, 3}  # Real part of the permittivity ε' [F/m]
     epsilon_im::Array{Float64, 3}  # Imaginary part of the permittivity ε'' [F/m]
     ω::Float64  # Angular frequency of the RF signal [rad/s], ω = 2πf
 end
@@ -62,17 +63,18 @@ end
 
 # Function to setup material properties matrices based on the geometry
 function setup_material_properties(material_indices, materials)
-    sigma, epsilon_im, VHC, k = (zeros(size(material_indices)) for _ in 1:4)
+    sigma, epsilon_re, epsilon_im, VHC, k = (zeros(size(material_indices)) for _ in 1:5)
 
     for i in eachindex(material_indices)
         mat = materials[material_indices[i]]
         sigma[i]      = mat[:sigma]
+        epsilon_re[i] = mat[:epsilon_re]
         epsilon_im[i] = mat[:epsilon_im]
         VHC[i]        = mat[:VHC]
         k[i]          = mat[:k]
     end
     
-    return sigma, epsilon_im, VHC, k
+    return sigma, epsilon_re, epsilon_im, VHC, k
 end
 
 end # module Config

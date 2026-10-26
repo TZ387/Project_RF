@@ -11,7 +11,7 @@ Instructions for AI coding agents working in this repository.
 - `src/prrf.jl` — top-level module. Includes the submodules and re-exports the public API; a new public function must be exported from its submodule and from here.
 - `src/Config.jl` — `GridParams`, `RFParams`, `HeatParams`, material property setup, coordinate grids.
 - `src/GridSetup.jl` — Ferrite hexahedral grid.
-- `src/RFSolver.jl` — RF potential solve (matrix-free Jacobi-preconditioned CG, on the CPU or a CUDA GPU) and field calculation.
+- `src/RFSolver.jl` — RF potential solve (matrix-free Jacobi-preconditioned COCG, on the CPU or a CUDA GPU) and field calculation.
 - `src/HeatSolver.jl` — explicit finite-difference heat solver, CPU-parallel or on a CUDA GPU.
 - `src/Timelapse.jl` — live GLMakie plot of the heat simulation.
 - `src/Plotting.jl` — slice plots and the E-field direction plot.
@@ -59,10 +59,10 @@ julia --project=. --threads auto Examples/Example1.jl  # run an example
 
 ## Things to know before changing the code
 
-- **Array shapes.** Cell fields (`sigma`, `Qel`, `E_mag`, `T`, `material_indices`) are `(nx, ny, nz)`. The potential `V` is nodal, `(nx+1, ny+1, nz+1)`. `E_vec` is `(3, nx, ny, nz)`.
+- **Array shapes.** Cell fields (`sigma`, `Qel`, `E_mag`, `T`, `material_indices`) are `(nx, ny, nz)`. The potential `V` is nodal, `(nx+1, ny+1, nz+1)`. `E_vec` is `(3, nx, ny, nz)`. `V`, `V_dof` and `E_vec` are complex amplitudes; `Qel` and `E_mag` are real.
 - **Coordinates.** The Ferrite grid, the `x` passed to boundary-condition functions, the cell centres from `create_coordinate_grids` and the plots are all centred in x and y (`[-l/2, l/2]`) and run `[0, lz]` in z. z is depth, so `setup_grid` swaps Ferrite's `"top"` and `"bottom"` face names to make `"top"` the z = 0 face.
 - **Uniform grid assumption.** `solve_rf` computes one reference element stiffness matrix and reuses it for every cell, `calculate_fields` takes E from edge differences of the nodal V, and `convert_V` relies on the nodes being numbered x fastest. All three are only valid for the uniform hex grid that `setup_grid` produces.
 - **Threading.** The heat solver runs inside a `Threads.@spawn` task, where `Threads.@threads` deadlocks, and GLMakie observables may only be written from the main thread. Read the header comments in `src/HeatSolver.jl` and `src/Timelapse.jl` before changing either.
-- **GPU.** `use_gpu = true` runs the heat time stepping and the RF solver's CG iterations with CUDA.jl, in Float64 like the CPU code. The CPU and GPU paths share the per-cell code (`stepped_temperature`, `cell_product`); the GPU matvec adds cell contributions with atomics. `test/gpu.jl` compares GPU with CPU results and is skipped when no usable GPU is present.
+- **GPU.** `use_gpu = true` runs the heat time stepping and the RF solver's COCG iterations with CUDA.jl, in double precision like the CPU code (`ComplexF64` for the RF solve). The CPU and GPU paths share the per-cell code (`stepped_temperature`, `cell_product`); the GPU matvec adds cell contributions with atomics, to the real and imaginary parts separately, as CUDA has no complex atomics. `test/gpu.jl` compares GPU with CPU results and is skipped when no usable GPU is present.
 - **Ignored files.** `*.h5`, `Images/`, `Results/`, `.vscode/`, `prompt.txt` and `benchmark_solvers.jl` are git-ignored output or local scratch. Do not force-add them.
 - **Dependencies.** `Manifest.toml` is committed and also covers `test/Project.toml`, and every dependency in `Project.toml` has a `[compat]` entry. Change them only when the task is a dependency change.
