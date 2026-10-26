@@ -21,8 +21,9 @@ end
 function define_material_properties()
     materials = Dict{Int, NamedTuple}()
     
-    # Relative permittivities; epsilon_re of the tissues at 1 MHz from [3] in the README, PVC a typical value
-    materials[1] = (name = "PVC", sigma = 0.000078, epsilon_re = 3.5, epsilon_im = 0, VHC = 1.0e6, k = 0.025)
+    # Relative permittivities; epsilon_re of the tissues at 1 MHz from [3] in the README
+    # PVC at 1 MHz: ε'r = 4.0 and tan δ = 0.14 (Cardarelli, Materials Handbook, 2018), so sigma = ωε0ε'r tan δ
+    materials[1] = (name = "PVC", sigma = 3.1e-5, epsilon_re = 4.0, epsilon_im = 0, VHC = 1.0e6, k = 0.025)
     materials[2] = (name = "Skin", sigma = 0.22, epsilon_re = 1833, epsilon_im = 0, VHC = 4.18e6, k = 0.6)
     materials[3] = (name = "Fat", sigma = 0.025, epsilon_re = 27.2, epsilon_im = 0, VHC = 1.0e6, k = 0.5)
     materials[4] = (name = "Muscle", sigma = 0.5, epsilon_re = 1836, epsilon_im = 0, VHC = 1.0e6, k = 0.5)
