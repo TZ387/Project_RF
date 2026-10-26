@@ -3,24 +3,25 @@ using Ferrite: get_node_coordinate
 @testset "RF solver" begin
     @testset "layered plates match the analytical solution" begin
         # Four layers between an electrode on top and ground at the bottom, in series like
-        # impedances L/γ with γ = σ − iωε0ε. The potential is linear within each layer, so linear
-        # elements reproduce it at the nodes.
+        # impedances L/γ with γ = σ + ωε0(ε'' − iε'). The potential is linear within each layer, so
+        # linear elements reproduce it at the nodes.
         σ = [0.3, 0.22, 0.025, 0.5]
-        ε = [80, 1833, 27.2, 1836]  # relative permittivity
+        ε_re = [80, 1833, 27.2, 1836]  # relative permittivity
+        ε_im = [0, 0, 500, 0]
         ω = 2π * 1e6
-        γ = σ .- im .* ω .* ε0 .* ε
+        γ = σ .+ ω .* ε0 .* (ε_im .- im .* ε_re)
         L = [0.5e-3, 1.5e-3, 3.5e-3, 5.0e-3]
         gp = GridParams(0.01, 0.01, sum(L), 3, 3, 21)  # layer interfaces fall on nodes
         layer = [findfirst(>(z), cumsum(L)) for z in create_coordinate_grids(gp)[3]]
         bc = Dict("top" => (x, t) -> 10.0, "bottom" => (x, t) -> 0.0)
-        _, _, Qel, E_mag, E_vec, V = @test_logs min_level = Logging.Warn run_simulation(gp, RFParams(σ[layer], ε[layer], zeros(size(layer)), ω), bc)
+        _, _, Qel, E_mag, E_vec, V = @test_logs min_level = Logging.Warn run_simulation(gp, RFParams(σ[layer], ε_re[layer], ε_im[layer], ω), bc)
 
         J = 10 / sum(L ./ γ)  # current density
         depth = [0; cumsum(L)]
         V_exact = [10 - J * sum(clamp(z - depth[n], 0, L[n]) / γ[n] for n in 1:4) for z in range(0, gp.lz, gp.nz + 1)]
         @test all(V[:, :, 1] .== 10) && all(V[:, :, end] .== 0)
         @test V ≈ repeat(reshape(V_exact, 1, 1, :), gp.nx + 1, gp.ny + 1) atol = 1e-6
-        @test Qel ≈ 0.5 .* σ[layer] .* abs2.(J ./ γ[layer]) rtol = 1e-6
+        @test Qel ≈ 0.5 .* real.(γ[layer]) .* abs2.(J ./ γ[layer]) rtol = 1e-6
         @test all(>(0), real.(E_vec[3, :, :, :]))  # E points from the electrode into the tissue
         @test maximum(abs, E_vec[1:2, :, :, :]) < 1e-6 * maximum(E_mag)
     end
