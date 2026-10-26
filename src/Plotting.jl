@@ -60,8 +60,9 @@ end
 
 # Plots uniform-length arrows showing the direction of the electric field on a
 # subsampled 3D grid. Arrow length is constant — magnitude information is shown
-# separately in the E_mag slice plot. The arrows show Re E, the field when the electrode
-# potentials peak.
+# separately in the E_mag slice plot. Each arrow shows the field Re(E e^{-iωt}) of its cell at
+# the instant it is strongest there, ωt = ½ arg E·E, pointing the same way as the field when the
+# electrode potentials peak (t = 0).
 #
 # arrow_density is the number of arrows along each axis.
 function plot_field_directions(E_vec, grid_params; arrow_density = 6, title = "E-field Direction")
@@ -99,7 +100,9 @@ function plot_field_directions(E_vec, grid_params; arrow_density = 6, title = "E
     for iz in zi, iy in yi, ix in xi
         k += 1
         ps[k] = Point3f(x[ix], y[iy], z[iz])
-        ex, ey, ez = real(E_vec[1, ix, iy, iz]), real(E_vec[2, ix, iy, iz]), real(E_vec[3, ix, iy, iz])
+        E = E_vec[:, ix, iy, iz]
+        e = real.(E .* cis(-angle(sum(E .^ 2)) / 2))
+        ex, ey, ez = sum(e .* real.(E)) < 0 ? -e : e
         m = sqrt(ex^2 + ey^2 + ez^2)
         ns[k] = m > 0 ? Vec3f(ex/m, ey/m, ez/m) : Vec3f(0f0, 0f0, 0f0)
     end

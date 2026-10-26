@@ -109,7 +109,7 @@ boundary_conditions = Dict(
 )
 ```
 
-`Qel` and `E_mag` are cell arrays of size `(nx, ny, nz)`, `E_vec` is `(3, nx, ny, nz)`, and `V` is the potential at the grid nodes, `(nx+1, ny+1, nz+1)`. `V` and `E_vec` are complex amplitudes (Section 1.1): `abs.(V)` is the amplitude of the potential and `angle.(V)` its phase. `plot_graphs` shows $|V|$, and the field directions of $\mathrm{Re}\,\mathbf{E}$, the field when the electrode potentials peak.
+`Qel` and `E_mag` are cell arrays of size `(nx, ny, nz)`, `E_vec` is `(3, nx, ny, nz)`, and `V` is the potential at the grid nodes, `(nx+1, ny+1, nz+1)`. `V` and `E_vec` are complex amplitudes (Section 1.1): `abs.(V)` is the amplitude of the potential and `angle.(V)` its phase. `plot_graphs` shows $|V|$, and in each cell the direction of the field at the instant it is strongest there.
 
 Pass `use_gpu = true` to solve on an NVIDIA GPU (Section 1.3); the results are returned as ordinary arrays either way.
 
