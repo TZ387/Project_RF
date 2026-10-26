@@ -52,7 +52,7 @@ julia --project=. -e 'using Pkg; Pkg.test()'           # run the tests
 julia --project=. --threads auto Examples/Example1.jl  # run an example
 ```
 
-- Run the tests after changing `src/` or `Examples/`. They take about a minute. There is no CI, and none should be added; the tests are run locally.
+- Match the testing to the change. Run the full test suite after changes that can affect results, such as to a solver, the field calculation or an example's set-up; it takes about two minutes. A small mechanical change, such as a rename, a moved constant, a comment or the docs, needs at most a check that the package loads, and no extra verification scripts. There is no CI, and none should be added; the tests are run locally.
 - `test/examples.jl` runs every example with its solve, plots and file output replaced by stubs, then solves the example's set-up on a coarse grid. It relies on each example defining `geometryDefinition` and `define_material_properties` and calling `run_simulation`, as the existing ones do.
 - The first load precompiles GLMakie and can take several minutes.
 - The examples open GLMakie windows, so they need a display, and they solve grids of 2 to 6.5 million cells. They are not a quick check.
