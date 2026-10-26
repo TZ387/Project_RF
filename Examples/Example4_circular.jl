@@ -56,7 +56,7 @@ function main()
         sigma,   # Electrical conductivity matrix [S/m]
         epsilon_re, # Real part of the relative permittivity ε'/ε0
         epsilon_im, # Imaginary part of the relative permittivity ε''/ε0
-        1e6,     # ω = Angular frequency of the RF signal [rad/s]
+        2π * 1e6, # ω = Angular frequency of the RF signal [rad/s], f = 1 MHz
     )
 
 
