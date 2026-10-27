@@ -104,7 +104,7 @@ Run `run_simulation` to obtain the electric field results and the heat source `Q
 grid, V_dof, Qel, E_mag, E_vec, V = run_simulation(grid_params, rf_params, boundary_conditions)
 ```
 
-`boundary_conditions` assigns a potential to faces of the domain (`"top"`, `"bottom"`, `"left"`, `"right"`, `"front"`, `"back"`); faces that are not listed, and parts of a face where the function returns `nothing`, are insulating. Each entry is a function of the position `x`, which is centred in x and y and runs in z, the depth into the tissue, from 0 at the `"top"` face to `lz` at the `"bottom"` face:
+`boundary_conditions` assigns a potential to faces of the domain (`"top"`, `"bottom"`, `"left"`, `"right"`, `"front"`, `"back"`); faces that are not listed, and parts of a face where the function returns `nothing`, are insulating. A cell face on the boundary takes the potential only if the function gives a value at all four of its corners, so an electrode must cover at least one whole cell face. Each entry is a function of the position `x`, which is centred in x and y and runs in z, the depth into the tissue, from 0 at the `"top"` face to `lz` at the `"bottom"` face:
 
 ```julia
 boundary_conditions = Dict(
@@ -124,6 +124,8 @@ Pass `Qel` to `run_heat_simulation` to evolve the temperature field:
 ```julia
 T_final = run_heat_simulation(Qel, grid_params, heat_params)
 ```
+
+`heat_params = HeatParams(schedule, n_update, T_initial, VHC, k)` holds the schedule (Section 1.2), the number of live-plot refreshes per phase, the initial temperature, and the volumetric heat capacity and thermal conductivity of each cell; `Example1.jl` sets each of them.
 
 Set `create_timelapse = true` to display a live-updating cross-section plot of the temperature field as the simulation runs:
 
