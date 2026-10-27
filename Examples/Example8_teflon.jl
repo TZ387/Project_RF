@@ -78,7 +78,7 @@ function main()
         if r <= radius
             return V0  # Constant potential inside circular region
         else
-            return 0.0  # Zero potential outside the circular region
+            return nothing  # Insulating outside the circular region, where the Teflon faces air
         end
         end
     )
