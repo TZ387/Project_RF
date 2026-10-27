@@ -12,7 +12,7 @@ function geometryDefinition(grid_params::GridParams)
     # Apply conditions using absolute coordinates [m]
     M[Z .> 0.0005] .= 2    # Skin (0.5 mm depth)
     M[Z .> 0.0025] .= 3     # Fat (2.5 mm depth)  
-    M[Z .> 0.007] .= 4    # Muscle (7 mm depth)
+    M[Z .> 0.0075] .= 4    # Muscle (7.5 mm depth)
     
     return M
 end
@@ -39,10 +39,10 @@ function main()
     grid_params = GridParams(
         0.3,    # lx = Length of the simulation domain in x-direction [m]
         0.3,    # ly = Length of the simulation domain in y-direction [m]
-        0.0155, # lz = Length of the simulation domain in z-direction [m]
+        0.015,  # lz = Length of the simulation domain in z-direction [m]
         100,    # nx = Number of elements in the x-direction
         100,    # ny = Number of elements in the y-direction
-        310     # nz = Number of elements in the z-direction
+        300     # nz = Number of elements in the z-direction
     )
 
     # Load materials and geometry
