@@ -33,7 +33,7 @@ end
 
 function main()
     # Flags for use
-    use_gpu = false            # Solve on an NVIDIA GPU (needs CUDA)
+    use_gpu = true            # Solve on an NVIDIA GPU (needs CUDA)
 
     # Define grid parameters
     grid_params = GridParams(
