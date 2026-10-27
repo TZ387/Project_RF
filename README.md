@@ -58,7 +58,7 @@ The potential is computed with linear finite elements on a uniform hexahedral gr
 
 ### 1.2 Heat equation
 
-The temperature field $T$ is evolved using the classic heat equation with $Q_{el}$ as a volumetric source. This is the bioheat equation used in [4] without the blood-perfusion term:
+The temperature field $T$ is evolved using the classic heat equation, with $Q_{el}$ and any additional heating as the volumetric source $Q$. This is the bioheat equation used in [4] without the blood-perfusion term:
 
 $$\text{VHC}(\mathbf{x})\, \frac{\partial T}{\partial t} = \nabla \cdot [k(\mathbf{x})\, \nabla T] + Q(\mathbf{x},t)$$
 
@@ -74,7 +74,7 @@ schedule = [
 ]
 ```
 
-During each phase $Q$ = `rf_factor` · $Q_{el}$ + `Q_extra`. Both are numbers or `(nx, ny, nz)` arrays with one value per cell, and are 0 when left out; `Q_extra` is in W/m³. As $Q_{el} \propto |V|^2$, an `rf_factor` of 0.5 is the heating with all electrode voltages scaled by $1/\sqrt{2}$.
+During each phase $Q$ = `rf_factor` · $Q_{el}$ + `Q_extra`. Both are numbers or `(nx, ny, nz)` arrays with one value per cell, and are 0 when left out; `Q_extra` is in W/m³. As $Q_{el} \propto |V|^2$, an `rf_factor` of 0.5 is the heating with all electrode voltages scaled by $1/\sqrt{2}$. A per-cell `rf_factor` has no physical counterpart, as the electrodes set the field everywhere, but it can, for example, switch off the heating near one edge.
 
 The equation is solved with finite differences and explicit Euler time stepping. The time step $\Delta t$ is chosen automatically to satisfy the stability criterion:
 
