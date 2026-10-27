@@ -30,7 +30,7 @@ function test_example(m)
     @test all(>(0), rf.sigma)
     @test keys(bc) ⊆ ("top", "bottom", "left", "right", "front", "back")
 
-    coarse = GridParams(gp.lx, gp.ly, gp.lz, cld(gp.nx, 10), cld(gp.ny, 10), cld(gp.nz, 5))
+    coarse = GridParams(gp.lx, gp.ly, gp.lz, cld(gp.nx, 5), cld(gp.ny, 5), cld(gp.nz, 5))
     sigma, epsilon_re, epsilon_im, VHC, k = setup_material_properties(m.geometryDefinition(coarse), m.define_material_properties())
     grid, _, Qel, _, _, V = @test_logs min_level = Logging.Warn run_simulation(coarse, RFParams(sigma, epsilon_re, epsilon_im, rf.ω), bc)
     @test all(isfinite, V) && all(>=(0), Qel)
