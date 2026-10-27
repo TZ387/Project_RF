@@ -29,4 +29,21 @@
         T = @test_logs min_level = Logging.Warn run_heat_simulation(Q, gp, hp)
         @test sum(VHC .* (T .- 20.0)) ≈ sum(Q) * 1.5 + (sum(Q[2:end, :, :]) + sum(Q_extra)) * 0.5 rtol = 1e-10
     end
+
+    @testset "cosine mode follows the exact explicit-Euler solution" begin
+        # φ is an eigenvector of the insulated difference operator with eigenvalue -Λ, so with Q = S·φ the
+        # rise stays a·φ, where a takes explicit Euler steps of VHC·da/dt = S - kΛa
+        X, Y, Z = create_coordinate_grids(gp)
+        φ = cos.(π .* (X ./ gp.lx .+ 0.5)) .* cos.(π .* (Y ./ gp.ly .+ 0.5)) .* cos.(π .* Z ./ gp.lz)
+        Λ = sum(4 / (l / n)^2 * sin(π / (2n))^2 for (l, n) in ((gp.lx, gp.nx), (gp.ly, gp.ny), (gp.lz, gp.nz)))
+        S, VHC, k, t = 1e5, 2e6, 0.5, 3.0
+        hp = HeatParams([HeatPhase(duration = t, rf_factor = φ)], 0, fill(37.0, dims), fill(VHC, dims), fill(k, dims))
+        n = ceil(Int, t / compute_stable_dt(hp, gp))
+        a = 0.0
+        for _ in 1:n
+            a += t / n / VHC * (S - k * Λ * a)
+        end
+        T = @test_logs min_level = Logging.Warn run_heat_simulation(fill(S, dims), gp, hp)
+        @test T .- 37.0 ≈ a .* φ
+    end
 end
