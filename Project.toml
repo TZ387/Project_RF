@@ -16,7 +16,7 @@ Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
 StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
 
 [compat]
-CUDA = "6.4.2"
+CUDA = "6.5.0"
 Ferrite = "1.4.0"
 GLMakie = "0.13.16"
 HDF5 = "0.17.3"
