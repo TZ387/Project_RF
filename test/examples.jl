@@ -58,14 +58,14 @@ function test_example(m)
         @test Qel ≈ repeat(reshape(0.5 * abs2(J) .* σ[1, 1, :] ./ abs2.(γ[1, 1, :]), 1, 1, :), coarse.nx, coarse.ny)
     end
 
-    # Insulated boundaries: all heat deposited while the source is on is stored
+    # Insulated boundaries: all heat deposited by the sources is stored
     if haskey(m.recorded, :heat)
         hp = m.recorded[:heat]
         T0 = first(hp.T_initial)
         @test all(==(T0), hp.T_initial)
         T = @test_logs min_level = Logging.Warn run_heat_simulation(Qel, coarse, HeatParams(hp.schedule, 0, fill(T0, size(Qel)), VHC, k))
-        t_on = sum(duration for (state, duration) in hp.schedule if state == :on)
-        @test sum(VHC .* (T .- T0)) ≈ sum(Qel) * t_on rtol = 1e-9
+        heat_in = sum(sum(p.rf_factor .* Qel .+ p.Q_extra) * p.duration for p in hp.schedule)
+        @test sum(VHC .* (T .- T0)) ≈ heat_in rtol = 1e-9
     end
 end
 

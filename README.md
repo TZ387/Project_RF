@@ -64,13 +64,17 @@ $$\text{VHC}(\mathbf{x})\, \frac{\partial T}{\partial t} = \nabla \cdot [k(\math
 
 where VHC $= \rho c$ [J/(m³·K)] is the volumetric heat capacity and $k$ [W/(m·K)] is the thermal conductivity, both spatially varying according to the tissue geometry. All outer boundaries are insulated (zero heat flux).
 
-The simulation follows an arbitrary **heating schedule** — an ordered list of `(:on, duration)` and `(:off, duration)` phases, for example:
+The simulation follows an arbitrary **heating schedule** — an ordered list of phases, for example:
 
 ```julia
-schedule = [(:on, 30.0), (:off, 60.0), (:on, 15.0)]
+schedule = [
+    HeatPhase(duration = 30.0, rf_factor = 0.5),                 # half RF power
+    HeatPhase(duration = 60.0),                                  # cooling
+    HeatPhase(duration = 15.0, rf_factor = 1.0, Q_extra = 2e4),  # full RF power plus 20 kW/m³
+]
 ```
 
-During `:on` phases $Q = Q_{el}$; during `:off` phases $Q = 0$.
+During each phase $Q$ = `rf_factor` · $Q_{el}$ + `Q_extra`. Both are numbers or `(nx, ny, nz)` arrays with one value per cell, and are 0 when left out; `Q_extra` is in W/m³. As $Q_{el} \propto |V|^2$, an `rf_factor` of 0.5 is the heating with all electrode voltages scaled by $1/\sqrt{2}$.
 
 The equation is solved with finite differences and explicit Euler time stepping. The time step $\Delta t$ is chosen automatically to satisfy the stability criterion:
 

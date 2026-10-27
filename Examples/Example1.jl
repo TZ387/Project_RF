@@ -65,10 +65,11 @@ function main()
 
     # Load heat parameters
     heat_params = HeatParams(
-        [                       # schedule = ordered list of (:on/:off, duration [s]) phases
-            (:on,  3.0),        # heat for 3 s
-            (:off, 6.0),        # cool for 6 s
-            (:on,  3.0),        # heat again for 3 s
+        [   # schedule = ordered list of phases; in each, the heat source is rf_factor·Qel + Q_extra [W/m³]
+            # rf_factor and Q_extra are numbers or (nx, ny, nz) arrays (one value per cell), 0 when left out
+            HeatPhase(duration = 3.0, rf_factor = 1.0),  # heat for 3 s at full RF power
+            HeatPhase(duration = 6.0),                   # cool for 6 s
+            HeatPhase(duration = 3.0, rf_factor = 1.0),  # heat again for 3 s
         ],
         2,                      # n_update  = Number of plot refreshes per phase
         T_initial,              # T_initial = Initial temperature [°C]

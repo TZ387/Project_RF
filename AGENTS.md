@@ -9,7 +9,7 @@ Instructions for AI coding agents working in this repository.
 ## Layout
 
 - `src/prrf.jl` — top-level module. Includes the submodules and re-exports the public API; a new public function must be exported from its submodule and from here.
-- `src/Config.jl` — `GridParams`, `RFParams`, `HeatParams`, material property setup, coordinate grids.
+- `src/Config.jl` — `GridParams`, `RFParams`, `HeatPhase`, `HeatParams`, material property setup, coordinate grids.
 - `src/GridSetup.jl` — Ferrite hexahedral grid.
 - `src/RFSolver.jl` — RF potential solve (matrix-free Jacobi-preconditioned COCG, on the CPU or a CUDA GPU) and field calculation.
 - `src/HeatSolver.jl` — explicit finite-difference heat solver, CPU-parallel or on a CUDA GPU.

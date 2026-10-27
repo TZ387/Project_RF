@@ -3,7 +3,7 @@
 module Config
 
 # Export the structures and functions to make them available outside this module
-export RFParams, HeatParams, GridParams, setup_material_properties, create_coordinate_grids
+export RFParams, HeatPhase, HeatParams, GridParams, setup_material_properties, create_coordinate_grids
 
 const epsilon_0 = 8.854e-12  # Permittivity of free space [F/m]
 
@@ -15,15 +15,20 @@ struct RFParams
     ω::Float64  # Angular frequency of the RF signal [rad/s], ω = 2πf
 end
 
-# Ordered sequence of heating/cooling phases.
-# Each entry is a (Symbol, Float64) tuple where the symbol is :on or :off
-# and the float is the duration of that phase in seconds.
-# Example: [(:on, 30.0), (:off, 60.0), (:on, 15.0)]
-const HeatSchedule = Vector{Tuple{Symbol, Float64}}
+# One phase of the heat schedule: for `duration` seconds the heat source is rf_factor·Qel + Q_extra.
+# rf_factor and Q_extra are numbers (uniform) or (nx, ny, nz) arrays (one value per cell), 0 when left out.
+# Example: HeatPhase(duration = 30.0, rf_factor = 0.5)
+struct HeatPhase
+    duration  :: Float64                                # [s]
+    rf_factor :: Union{Real, AbstractArray{<:Real, 3}}  # Factor on the RF power Qel
+    Q_extra   :: Union{Real, AbstractArray{<:Real, 3}}  # Additional heat source [W/m³]
+end
+
+HeatPhase(; duration, rf_factor = 0.0, Q_extra = 0.0) = HeatPhase(duration, rf_factor, Q_extra)
 
 # Parameters for heat problem
 struct HeatParams
-    schedule  :: HeatSchedule        # Ordered sequence of (:on/:off, duration [s]) phases
+    schedule  :: Vector{HeatPhase}   # Ordered sequence of heating/cooling phases
     n_update  :: Int                 # Number of plot updates per phase
     T_initial :: Array{Float64, 3}   # Initial temperature [°C]
     VHC       :: Array{Float64, 3}   # Volumetric heat capacity [J/(m³·K)]  (VHC = rho * c)

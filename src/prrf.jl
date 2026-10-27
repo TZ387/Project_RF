@@ -18,7 +18,7 @@ using .Plotting
 using .RunSimulation
 using .SimulationIO
 
-export GridParams, RFParams, HeatParams, setup_material_properties, create_coordinate_grids
+export GridParams, RFParams, HeatPhase, HeatParams, setup_material_properties, create_coordinate_grids
 export setup_grid
 export solve_rf, calculate_fields, convert_V
 export compute_stable_dt, solve_heat_phase
