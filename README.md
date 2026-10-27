@@ -113,7 +113,7 @@ boundary_conditions = Dict(
 )
 ```
 
-`Qel` and `E_mag` are cell arrays of size `(nx, ny, nz)`, `E_vec` is `(3, nx, ny, nz)`, and `V` is the potential at the grid nodes, `(nx+1, ny+1, nz+1)`. `E_mag` is the root mean square of $|\mathbf{E}|$ over each cell, so that `Qel` = ½(σ + ωε'')`E_mag`², and `E_vec` is the mean field of each cell. `V` and `E_vec` are complex amplitudes (Section 1.1): `abs.(V)` is the amplitude of the potential and `angle.(V)` its phase. `plot_graphs` shows $|V|$, and in each cell the direction of the field at the instant it is strongest there. Its colour scales for `Qel` and `E_mag` end at the 99th percentile, so that a few extreme cells, such as at the rim of an electrode, do not wash out the rest.
+`Qel` and `E_mag` are cell arrays of size `(nx, ny, nz)`, `E_vec` is `(3, nx, ny, nz)`, and `V` is the potential at the grid nodes, `(nx+1, ny+1, nz+1)`. `E_mag` is the root mean square of $|\mathbf{E}|$ over each cell, so that `Qel` = ½(σ + ωε'')`E_mag`², and `E_vec` is the mean field of each cell. `V` and `E_vec` are complex amplitudes (Section 1.1): `abs.(V)` is the amplitude of the potential and `angle.(V)` its phase. `plot_graphs` shows $|V|$, and in each cell the direction of the field at the instant it is strongest there.
 
 Pass `use_gpu = true` to solve on an NVIDIA GPU (Section 1.3); the results are returned as ordinary arrays either way.
 

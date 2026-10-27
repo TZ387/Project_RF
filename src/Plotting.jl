@@ -116,17 +116,11 @@ end
 
 # ── Top-level plotting entry point ────────────────────────────────────────────
 
-# Colour range from 0 to the 99th percentile, rounded for readable ticks, so that a few extreme
-# cells, such as at the rim of an electrode, do not wash out the rest of the plot
-capped(A) = (0.0, round(partialsort(vec(A), ceil(Int, 0.99 * length(A))); sigdigits = 2))
-
 function plot_graphs(material_indices, grid_params, Qel, E_mag, E_vec, V, filename=nothing, arrow_density = 6)
     fig1 = plot_slices(material_indices, grid_params,
                        ticks = sort(unique(material_indices)), title = "Media Distribution")
-    fig2 = plot_slices(Qel, grid_params, colorrange = capped(Qel),
-                       title = "Distribution of Qel [W/m³]\n(colours capped at the 99th percentile)")
-    fig3 = plot_slices(E_mag, grid_params, colorrange = capped(E_mag),
-                       title = "Distribution of E [V/m]\n(colours capped at the 99th percentile)")
+    fig2 = plot_slices(Qel, grid_params, title = "Distribution of Qel [W/m³]")
+    fig3 = plot_slices(E_mag, grid_params, title = "Distribution of E [V/m]")
     fig4 = plot_slices(abs.(V), grid_params, title = "Distribution of |V| [V]")
     fig5 = plot_field_directions(E_vec, grid_params; arrow_density, title = "E-field Direction")
 
