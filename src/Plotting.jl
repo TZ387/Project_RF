@@ -48,7 +48,7 @@ function slice_controls!(gridpos, plt, dims)
 
         on(_ -> set_close_to!(slider, slider.value[] - 1), left_btn.clicks)
         on(_ -> set_close_to!(slider, slider.value[] + 1), right_btn.clicks)
-        on(plt[Symbol(:update_, plane)][], slider.value)
+        on(i -> plt[Symbol(plane, :_index)] = i, slider.value)
         on(is_active -> plt[Symbol(:heatmap_, plane)][].visible = is_active, toggle.active)
 
         set_close_to!(slider, n ÷ 2)
