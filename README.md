@@ -6,19 +6,29 @@ A program for RF heating simulation in biological tissue. Given an arbitrary ele
 
 - [Julia](https://julialang.org/) ≥ 1.12
 - Optional: an NVIDIA GPU with a current driver, for `use_gpu = true`
-- Dependencies are listed in `Project.toml` and managed by Julia's built-in package manager. To install them, open a Julia REPL in the project directory and run:
 
-```julia
-using Pkg
-Pkg.activate(".")
-Pkg.instantiate()
-```
+## Installation
 
-To run the tests:
+1. Download the code and enter its folder:
 
-```julia
-Pkg.test()
-```
+   ```
+   git clone https://github.com/TZ387/prrf.git
+   cd prrf
+   ```
+
+2. Start Julia in this folder, either normally with `julia`, or with `julia --threads auto` to use all CPU threads ([Enabling multiple threads](#enabling-multiple-threads)).
+
+3. Install the dependencies listed in `Project.toml`; the first time, this takes several minutes:
+
+   ```julia
+   using Pkg
+   Pkg.activate(".")
+   Pkg.instantiate()
+   ```
+
+Now you can run the examples in `Examples/` and modify them.
+
+In later sessions `Pkg.instantiate()` is not needed: start Julia in this folder, run `using Pkg` and `Pkg.activate(".")`, and then an example. The Julia extension for VS Code activates the folder by itself when you open it.
 
 ## 1. Theoretical basis
 
@@ -84,7 +94,7 @@ evaluated over all cells, with a safety factor of 0.9. The sum runs over the fac
 
 ### 1.3 Parallelisation
 
-The heat update kernel is parallelised (if this is enabled, see section Enabling Multiple Threads below) by partitioning the grid's z-dimension into chunks, one per Julia thread. The thread count is printed at the start of each phase.
+The heat update kernel is parallelised (when Julia runs with several threads, see [Enabling multiple threads](#enabling-multiple-threads)) by partitioning the grid's z-dimension into chunks, one per Julia thread. The thread count is printed at the start of each phase.
 
 The RF solver's matrix-vector product is parallelised over alternating z-layers, and the COCG vector updates over chunks of the vectors; both use all Julia threads.
 
@@ -168,12 +178,12 @@ By default Julia starts with a single thread, so the parallel kernels described 
 }
 ```
 
-**Command line / other environments** — pass the flag directly or set the environment variable:
+**Command line / other environments** — pass the flag when starting Julia, or set the environment variable in the terminal first:
 
-```bash
-julia --project=. --threads auto Examples/Example1.jl
-# or
-export JULIA_NUM_THREADS=auto
+```
+julia --threads auto
+export JULIA_NUM_THREADS=auto           # Linux and macOS
+$env:JULIA_NUM_THREADS = "auto"         # Windows PowerShell
 ```
 
 You can confirm the thread count inside Julia with `Threads.nthreads()`.
